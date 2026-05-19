@@ -2,6 +2,7 @@
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -85,14 +86,19 @@ async def http_exception_handler(
 async def validation_exception_handler(
     request: Request, exc: RequestValidationError
 ) -> JSONResponse:
-    """Réponse 422 au format ``Error`` du contrat OpenAPI."""
+    """Réponse 422 au format ``Error`` du contrat OpenAPI.
+
+    Pydantic v2 peut inclure l'instance ``Exception`` originelle dans
+    ``ctx.error`` (non sérialisable JSON nativement). On passe par
+    ``jsonable_encoder`` pour neutraliser ces valeurs avant la réponse.
+    """
     return JSONResponse(
         status_code=422,
         content={
             "error": {
                 "code": "VALIDATION_ERROR",
                 "message": "Les données fournies sont invalides.",
-                "details": {"errors": exc.errors()},
+                "details": {"errors": jsonable_encoder(exc.errors())},
             }
         },
     )

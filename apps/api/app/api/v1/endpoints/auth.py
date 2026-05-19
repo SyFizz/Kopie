@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -24,6 +24,13 @@ from app.services.auth_service import AuthService
 router = APIRouter(prefix="/auth")
 
 DbSession = Annotated[AsyncSession, Depends(get_db)]
+
+# Bornes alignées avec ``contracts/openapi.yaml`` (schema query param ``token``).
+# Permet à FastAPI de produire un 422 explicite au lieu de transmettre un token
+# manifestement malformé au service.
+VerificationToken = Annotated[
+    str, Query(min_length=16, max_length=128, description="Token de vérification.")
+]
 
 
 @router.post(
@@ -60,7 +67,7 @@ async def register(
 )
 async def verify_email(
     request: Request,
-    token: str,
+    token: VerificationToken,
     db: DbSession,
 ) -> VerifyEmailResponse:
     """Active le compte associé si le token est valide et non expiré."""

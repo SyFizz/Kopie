@@ -115,6 +115,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        "422":
+          description: |
+            Paramètre `token` manquant ou hors des bornes documentées
+            (longueur < 16 ou > 128 caractères).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 
 components:
   schemas:
@@ -172,10 +180,14 @@ components:
         password:
           type: string
           minLength: 12
-          maxLength: 200
+          maxLength: 72
           description: |
             Mot de passe en clair (la requête DOIT être en HTTPS en prod).
             Politique MVP : 12 caractères minimum, pas de règle de complexité.
+            **Limite haute : 72 octets UTF-8** (limite intrinsèque de bcrypt —
+            au-delà, les octets supplémentaires seraient silencieusement
+            tronqués ; nous rejetons explicitement pour éviter toute
+            ambiguïté côté authentification).
           example: "motdepasse123456"
 
     TeacherCreated:

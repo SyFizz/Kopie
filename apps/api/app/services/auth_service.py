@@ -11,6 +11,7 @@ from datetime import UTC, datetime, timedelta
 
 import structlog
 from fastapi import BackgroundTasks, HTTPException, status
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import hash_password
@@ -21,6 +22,16 @@ from app.services.email_service import send_verification_email
 logger = structlog.get_logger(__name__)
 
 VERIFICATION_TOKEN_TTL = timedelta(hours=24)
+
+_EMAIL_ALREADY_REGISTERED = HTTPException(
+    status_code=status.HTTP_409_CONFLICT,
+    detail={
+        "error": {
+            "code": "EMAIL_ALREADY_REGISTERED",
+            "message": "Cet email est déjà utilisé.",
+        }
+    },
+)
 
 
 class AuthService:
@@ -43,33 +54,39 @@ class AuthService:
     ) -> Teacher:
         """Crée un compte enseignant en statut ``pending``.
 
-        Lève ``HTTPException(409)`` si l'email est déjà utilisé.
+        Lève ``HTTPException(409)`` si l'email est déjà utilisé. La contrainte
+        ``UNIQUE`` côté DB est l'autorité finale : entre le ``get_by_email``
+        et le ``commit``, une autre requête peut avoir inséré le même email,
+        auquel cas le ``IntegrityError`` est capté et traduit en 409 — la
+        réponse vue par le client reste identique au cas séquentiel
+        (AC2 : « aucune donnée n'est créée ni modifiée »).
+
         L'email de vérification est envoyé via ``BackgroundTasks`` (asynchrone).
         """
         normalized_email = email.lower().strip()
         existing = await self._repo.get_by_email(normalized_email)
         if existing is not None:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail={
-                    "error": {
-                        "code": "EMAIL_ALREADY_REGISTERED",
-                        "message": "Cet email est déjà utilisé.",
-                    }
-                },
-            )
+            raise _EMAIL_ALREADY_REGISTERED
 
         password_hash = hash_password(password)
         token = self._generate_verification_token()
         expires_at = datetime.now(UTC) + VERIFICATION_TOKEN_TTL
 
-        teacher = await self._repo.create(
-            email=normalized_email,
-            password_hash=password_hash,
-            verification_token=token,
-            verification_token_expires_at=expires_at,
-        )
-        await self._session.commit()
+        try:
+            teacher = await self._repo.create(
+                email=normalized_email,
+                password_hash=password_hash,
+                verification_token=token,
+                verification_token_expires_at=expires_at,
+            )
+            await self._session.commit()
+        except IntegrityError:
+            await self._session.rollback()
+            logger.info(
+                "auth.register_race_condition_email_taken",
+                email=normalized_email,
+            )
+            raise _EMAIL_ALREADY_REGISTERED from None
 
         background_tasks.add_task(send_verification_email, normalized_email, token)
 

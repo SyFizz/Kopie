@@ -89,6 +89,60 @@ async def test_register_duplicate_email(async_client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
+async def test_register_concurrent_race_returns_409(
+    async_client: AsyncClient,
+    db_session: AsyncSession,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """AC2 — si la contrainte UNIQUE casse le commit, on doit aussi voir 409.
+
+    Simule une race : ``get_by_email`` retourne None la première fois, mais
+    juste avant le commit un autre processus a inséré le même email. Le
+    ``IntegrityError`` doit être intercepté et traduit au même 409 idempotent.
+    """
+    import app.repositories.teacher_repository as repo_module
+
+    payload = {"email": "race@example.fr", "password": PASSWORD}
+
+    pre_existing = await async_client.post(
+        "/api/v1/auth/register", json=payload
+    )
+    assert pre_existing.status_code == 201
+
+    original_get_by_email = (
+        repo_module.TeacherRepository.get_by_email
+    )
+
+    async def get_by_email_pretending_not_found(self, email):  # type: ignore[no-untyped-def]
+        return None
+
+    monkeypatch.setattr(
+        repo_module.TeacherRepository,
+        "get_by_email",
+        get_by_email_pretending_not_found,
+    )
+
+    response = await async_client.post(
+        "/api/v1/auth/register", json=payload
+    )
+
+    monkeypatch.setattr(
+        repo_module.TeacherRepository,
+        "get_by_email",
+        original_get_by_email,
+    )
+
+    assert response.status_code == 409, response.text
+    assert response.json()["error"]["code"] == "EMAIL_ALREADY_REGISTERED"
+
+    count_result = await db_session.execute(
+        select(Teacher).where(Teacher.email == payload["email"])
+    )
+    rows = count_result.scalars().all()
+    assert len(rows) == 1, "Aucun doublon ne doit avoir été créé."
+
+
+@pytest.mark.asyncio
 async def test_register_invalid_password(async_client: AsyncClient) -> None:
     """AC1 — mot de passe < 12 caractères → 422."""
     response = await async_client.post(
@@ -98,6 +152,38 @@ async def test_register_invalid_password(async_client: AsyncClient) -> None:
     assert response.status_code == 422
     body = response.json()
     assert body["error"]["code"] == "VALIDATION_ERROR"
+
+
+@pytest.mark.asyncio
+async def test_register_password_too_long_in_bytes(
+    async_client: AsyncClient,
+) -> None:
+    """bcrypt tronque > 72 octets UTF-8 : nous devons rejeter explicitement.
+
+    ``é`` est encodé sur 2 octets UTF-8, donc 40 ``é`` = 80 octets > 72.
+    """
+    too_long = "é" * 40
+    assert len(too_long.encode("utf-8")) == 80
+    response = await async_client.post(
+        "/api/v1/auth/register",
+        json={"email": "longpwd@example.fr", "password": too_long},
+    )
+    assert response.status_code == 422
+    body = response.json()
+    assert body["error"]["code"] == "VALIDATION_ERROR"
+
+
+@pytest.mark.asyncio
+async def test_register_password_at_72_bytes_succeeds(
+    async_client: AsyncClient,
+) -> None:
+    """À la borne (72 octets pile) : doit accepter."""
+    exactly_72 = "a" * 72
+    response = await async_client.post(
+        "/api/v1/auth/register",
+        json={"email": "edge72@example.fr", "password": exactly_72},
+    )
+    assert response.status_code == 201, response.text
 
 
 @pytest.mark.asyncio
@@ -195,6 +281,18 @@ async def test_verify_email_invalid_token(async_client: AsyncClient) -> None:
 async def test_verify_email_missing_token(async_client: AsyncClient) -> None:
     """Le paramètre ``token`` est obligatoire (422 si absent)."""
     response = await async_client.get("/api/v1/auth/verify-email")
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "VALIDATION_ERROR"
+
+
+@pytest.mark.asyncio
+async def test_verify_email_token_too_short_rejected(
+    async_client: AsyncClient,
+) -> None:
+    """Token < 16 caractères : rejet 422 aligné avec le contrat OpenAPI."""
+    response = await async_client.get(
+        "/api/v1/auth/verify-email", params={"token": "short"}
+    )
     assert response.status_code == 422
     assert response.json()["error"]["code"] == "VALIDATION_ERROR"
 

@@ -1,9 +1,9 @@
 """Service d'envoi d'email — Story 1.3 (vérification d'adresse).
 
 Conformité :
-- NFR-8 : ne JAMAIS logger le mot de passe ni le token en clair. Seuls
-  l'email et l'URL de vérification (qui contient le token, certes — d'où
-  un log uniquement en mode dégradé/dev) sont émis.
+- NFR-8 : ne JAMAIS logger le mot de passe, le token en clair, ni l'URL
+  de vérification (qui contient le token). Seul l'email destinataire et
+  un préfixe non-réversible du token sont journalisés.
 - Mode dégradé : si ``SMTP_HOST`` est vide → on logge un ``warning``
   et on retourne sans erreur. Pratique en dev local et en CI sans SMTP.
 - ``smtplib`` synchrone est acceptable : la fonction est appelée via
@@ -35,14 +35,19 @@ def send_verification_email(email: str, token: str) -> None:
     Elle ne doit JAMAIS lever d'exception sortant du contexte de la
     background-task : on logge et on échoue silencieusement (UX : la
     réponse HTTP 201 doit rester correcte même si SMTP est down).
+
+    NFR-8 : on ne logge JAMAIS le token de vérification en clair (ni
+    directement, ni via l'URL qui le contient). Seul un préfixe court est
+    journalisé pour faciliter la corrélation côté admin.
     """
     verification_url = build_verification_url(token)
+    token_prefix = f"{token[:8]}…" if token else ""
 
     if not settings.SMTP_HOST:
         logger.warning(
             "smtp.host_not_configured_email_skipped",
             email=email,
-            verification_url=verification_url,
+            token_prefix=token_prefix,
         )
         return
 

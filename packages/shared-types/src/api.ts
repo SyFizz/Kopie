@@ -128,6 +128,10 @@ export interface components {
             /**
              * @description Mot de passe en clair (la requête DOIT être en HTTPS en prod).
              *     Politique MVP : 12 caractères minimum, pas de règle de complexité.
+             *     **Limite haute : 72 octets UTF-8** (limite intrinsèque de bcrypt —
+             *     au-delà, les octets supplémentaires seraient silencieusement
+             *     tronqués ; nous rejetons explicitement pour éviter toute
+             *     ambiguïté côté authentification).
              * @example motdepasse123456
              */
             password: string;
@@ -277,6 +281,18 @@ export interface operations {
             };
             /** @description Token invalide, inconnu ou expiré */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Paramètre `token` manquant ou hors des bornes documentées
+             *     (longueur < 16 ou > 128 caractères).
+             */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

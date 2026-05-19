@@ -12,6 +12,13 @@ import uuid
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
+PASSWORD_MIN_LENGTH = 12
+# bcrypt tronque silencieusement les mots de passe au-delà de 72 octets UTF-8 :
+# nous rejetons explicitement les entrées plus longues afin d'éviter toute
+# divergence ultérieure entre la chaîne enregistrée et celle utilisée pour
+# vérifier le mot de passe (cf. ``passlib.handlers.bcrypt``).
+PASSWORD_MAX_BYTES = 72
+
 
 class RegisterRequest(BaseModel):
     """Charge utile de ``POST /api/v1/auth/register``."""
@@ -19,17 +26,22 @@ class RegisterRequest(BaseModel):
     email: EmailStr = Field(..., description="Adresse email de l'enseignant.")
     password: str = Field(
         ...,
-        min_length=12,
-        max_length=200,
-        description="Mot de passe en clair (12 caractères minimum).",
+        min_length=PASSWORD_MIN_LENGTH,
+        description=(
+            "Mot de passe en clair (12 caractères minimum, 72 octets UTF-8 maximum)."
+        ),
     )
 
     @field_validator("password")
     @classmethod
-    def password_min_length(cls, v: str) -> str:
-        if len(v) < 12:
+    def password_within_bounds(cls, v: str) -> str:
+        if len(v) < PASSWORD_MIN_LENGTH:
             raise ValueError(
                 "Le mot de passe doit comporter au moins 12 caractères."
+            )
+        if len(v.encode("utf-8")) > PASSWORD_MAX_BYTES:
+            raise ValueError(
+                "Le mot de passe ne doit pas dépasser 72 octets UTF-8."
             )
         return v
 
