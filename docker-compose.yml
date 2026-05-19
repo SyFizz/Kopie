@@ -41,6 +41,18 @@ services:
       DATA_RETENTION_MONTHS: ${DATA_RETENTION_MONTHS:-12}
       # Contrat OpenAPI monté en lecture seule depuis l'hôte (source de vérité unique).
       OPENAPI_CONTRACT_PATH: /contracts/openapi.yaml
+      # SMTP (Story 1.3) — valeurs vides par défaut : mode dégradé (logs uniquement)
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      # URL publique de l'API (Story 1.3) — sert à construire les liens d'email
+      APP_BASE_URL: ${APP_BASE_URL:-http://localhost:8000}
+      # Rate limits (FR-43) — surchargeables via .env
+      RATE_LIMIT_AUTH: ${RATE_LIMIT_AUTH:-10/minute}
+      RATE_LIMIT_STUDENT_ANSWERS: ${RATE_LIMIT_STUDENT_ANSWERS:-60/minute}
+      RATE_LIMIT_STUDENT_EVENTS: ${RATE_LIMIT_STUDENT_EVENTS:-30/minute}
+      RATE_LIMIT_STUDENT_SUBMIT: ${RATE_LIMIT_STUDENT_SUBMIT:-5/minute}
     ports:
       - "8000:8000"
     volumes:
