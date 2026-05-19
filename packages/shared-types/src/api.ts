@@ -24,6 +24,53 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Inscription d'un nouvel enseignant
+         * @description Crée un compte enseignant en statut `pending` et envoie de façon
+         *     asynchrone un email de confirmation contenant un lien vers
+         *     `GET /api/v1/auth/verify-email`. Le compte n'est activable qu'après
+         *     clic sur ce lien (TTL 24 h).
+         *
+         *     Rate-limité par IP (FR-43, défaut `10/minute`).
+         */
+        post: operations["registerTeacher"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/verify-email": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Confirmation de l'email d'un enseignant via token
+         * @description Active le compte enseignant si le token (TTL 24 h) est valide.
+         *     Aucune authentification requise — le lien est porteur d'un secret
+         *     court-terme stocké en clair côté serveur.
+         */
+        get: operations["verifyTeacherEmail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -69,6 +116,39 @@ export interface components {
              * @example 2026-05-19T08:30:00Z
              */
             updated_at: string;
+        };
+        /** @description Requête d'inscription d'un enseignant (email + mot de passe). */
+        RegisterRequest: {
+            /**
+             * Format: email
+             * @description Adresse email de l'enseignant — servira d'identifiant
+             * @example marie.dupont@academie-versailles.fr
+             */
+            email: string;
+            /**
+             * @description Mot de passe en clair (la requête DOIT être en HTTPS en prod).
+             *     Politique MVP : 12 caractères minimum, pas de règle de complexité.
+             * @example motdepasse123456
+             */
+            password: string;
+        };
+        /** @description Réponse de création d'un compte enseignant (statut initial `pending`). */
+        TeacherCreated: {
+            /**
+             * Format: uuid
+             * @description Identifiant UUID v4 du compte créé
+             */
+            id: string;
+            /**
+             * Format: email
+             * @description Adresse email confirmée du compte
+             */
+            email: string;
+            /**
+             * @description Toujours `pending` à l'inscription — en attente de confirmation email
+             * @enum {string}
+             */
+            status: "pending";
         };
         Error: {
             error: {
@@ -116,6 +196,92 @@ export interface operations {
                         /** @example ok */
                         status: string;
                     };
+                };
+            };
+        };
+    };
+    registerTeacher: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterRequest"];
+            };
+        };
+        responses: {
+            /** @description Compte créé, email de confirmation envoyé */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeacherCreated"];
+                };
+            };
+            /** @description Email déjà utilisé par un autre compte */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Données invalides (email malformé, mot de passe trop court, etc.) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Trop de requêtes (rate limit dépassé) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    verifyTeacherEmail: {
+        parameters: {
+            query: {
+                /** @description Token de vérification reçu par email (43 caractères URL-safe) */
+                token: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Email confirmé avec succès, compte activé */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example Email confirmé. */
+                        message: string;
+                    };
+                };
+            };
+            /** @description Token invalide, inconnu ou expiré */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };

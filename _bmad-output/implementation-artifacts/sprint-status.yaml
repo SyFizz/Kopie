@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-05-19
-last_updated: 2026-05-19  # updated by bmad-code-review (1-2 → in-progress)
+last_updated: 2026-05-19  # updated by bmad-dev-story (1-3 → in-progress)
 project: Kopie
 project_key: NOKEY
 tracking_system: file-system
@@ -46,7 +46,7 @@ development_status:
   epic-1: in-progress
   1-1-scaffold-monorepo-et-infrastructure-locale: done
   1-2-contrat-openapi-initial-et-types-partages: in-progress
-  1-3-inscription-enseignant-avec-validation-email: backlog
+  1-3-inscription-enseignant-avec-validation-email: in-progress
   1-4-connexion-enseignant-et-gestion-de-session-jwt: backlog
   1-5-gestion-du-profil-enseignant: backlog
   1-6-isolation-des-donnees-enseignant: backlog

@@ -52,12 +52,16 @@ async def test_openapi_json_serves_yaml_contract(
     body = response.json()
 
     assert body["info"]["title"] == "Kopie API"
-    assert body["info"]["version"] == "0.1.0"
+    assert body["info"]["version"] == "0.2.0"
     assert body["openapi"] == "3.1.0"
 
     assert "Teacher" in body["components"]["schemas"]
+    assert "RegisterRequest" in body["components"]["schemas"]
+    assert "TeacherCreated" in body["components"]["schemas"]
     assert "Error" in body["components"]["schemas"]
     assert "/api/v1/health" in body["paths"]
+    assert "/api/v1/auth/register" in body["paths"]
+    assert "/api/v1/auth/verify-email" in body["paths"]
 
     assert body == expected_schema
 

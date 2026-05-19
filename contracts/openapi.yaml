@@ -1,7 +1,7 @@
 openapi: "3.1.0"
 info:
   title: Kopie API
-  version: "0.1.0"
+  version: "0.2.0"
   description: |
     Plateforme d'évaluation sécurisée — API REST.
     Contrat versionné. Types front générés via openapi-typescript → @kopie/shared-types.
@@ -34,6 +34,87 @@ paths:
                   status:
                     type: string
                     example: "ok"
+
+  /api/v1/auth/register:
+    post:
+      operationId: registerTeacher
+      summary: Inscription d'un nouvel enseignant
+      description: |
+        Crée un compte enseignant en statut `pending` et envoie de façon
+        asynchrone un email de confirmation contenant un lien vers
+        `GET /api/v1/auth/verify-email`. Le compte n'est activable qu'après
+        clic sur ce lien (TTL 24 h).
+
+        Rate-limité par IP (FR-43, défaut `10/minute`).
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: Compte créé, email de confirmation envoyé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeacherCreated"
+        "409":
+          description: Email déjà utilisé par un autre compte
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Données invalides (email malformé, mot de passe trop court, etc.)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: Trop de requêtes (rate limit dépassé)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/auth/verify-email:
+    get:
+      operationId: verifyTeacherEmail
+      summary: Confirmation de l'email d'un enseignant via token
+      description: |
+        Active le compte enseignant si le token (TTL 24 h) est valide.
+        Aucune authentification requise — le lien est porteur d'un secret
+        court-terme stocké en clair côté serveur.
+      tags: [auth]
+      parameters:
+        - name: token
+          in: query
+          required: true
+          description: Token de vérification reçu par email (43 caractères URL-safe)
+          schema:
+            type: string
+            minLength: 16
+            maxLength: 128
+      responses:
+        "200":
+          description: Email confirmé avec succès, compte activé
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [message]
+                properties:
+                  message:
+                    type: string
+                    example: "Email confirmé."
+        "400":
+          description: Token invalide, inconnu ou expiré
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 
 components:
   schemas:
@@ -77,6 +158,43 @@ components:
           format: date-time
           description: Horodatage ISO 8601 UTC de dernière modification
           example: "2026-05-19T08:30:00Z"
+
+    RegisterRequest:
+      type: object
+      description: Requête d'inscription d'un enseignant (email + mot de passe).
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          description: Adresse email de l'enseignant — servira d'identifiant
+          example: "marie.dupont@academie-versailles.fr"
+        password:
+          type: string
+          minLength: 12
+          maxLength: 200
+          description: |
+            Mot de passe en clair (la requête DOIT être en HTTPS en prod).
+            Politique MVP : 12 caractères minimum, pas de règle de complexité.
+          example: "motdepasse123456"
+
+    TeacherCreated:
+      type: object
+      description: Réponse de création d'un compte enseignant (statut initial `pending`).
+      required: [id, email, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Identifiant UUID v4 du compte créé
+        email:
+          type: string
+          format: email
+          description: Adresse email confirmée du compte
+        status:
+          type: string
+          enum: [pending]
+          description: Toujours `pending` à l'inscription — en attente de confirmation email
 
     Error:
       type: object
