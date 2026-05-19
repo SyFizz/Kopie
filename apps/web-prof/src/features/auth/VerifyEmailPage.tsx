@@ -12,28 +12,46 @@ export function VerifyEmailPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   // L'appel `verify-email` n'est PAS idempotent (le token est invalidé à la
-  // première utilisation). En `<StrictMode>` React invoque chaque effet deux
-  // fois en dev — sans précaution, le second appel renvoie 400
-  // « token expiré » et écrase l'état succès. On utilise une ref pour ne
-  // lancer qu'une seule fois par token vu, sans flag `cancelled` qui
-  // annulerait la mise à jour d'état du premier appel après la cleanup
-  // StrictMode (l'appel HTTP est court et le composant ne se démonte qu'à
-  // la navigation utilisateur, ce qui rend la course irréalisable en prod).
+  // première utilisation). Deux risques à neutraliser :
+  //
+  // 1. `<StrictMode>` (dev) invoque chaque effet deux fois ; sans garde,
+  //    le second appel renvoie 400 « token expiré » et écraserait l'écran
+  //    succès du premier. `dispatchedTokenRef` ne laisse qu'un seul
+  //    dispatch par valeur de `token` observée.
+  //
+  // 2. Si l'utilisateur navigue d'un `?token=A` à `?token=B` pendant que
+  //    l'appel pour `A` est encore en vol, la réponse tardive de `A` ne
+  //    doit pas pouvoir écraser l'écran rendu pour `B`. `currentTokenRef`
+  //    contient toujours le `token` actif de l'effet le plus récent ; à
+  //    la résolution de chaque fetch on vérifie que la valeur capturée
+  //    en closure est toujours la valeur courante, sinon on ignore.
   const dispatchedTokenRef = useRef<string | null>(null)
+  const currentTokenRef = useRef<string>(token)
 
   useEffect(() => {
+    currentTokenRef.current = token
     if (dispatchedTokenRef.current === token) {
       return
     }
     dispatchedTokenRef.current = token
+    const dispatchedToken = token
 
     async function run() {
-      if (!token) {
+      if (!dispatchedToken) {
         setStatus('error')
         setErrorMessage('Lien de vérification incomplet.')
         return
       }
-      const result = await verifyTeacherEmail(token)
+
+      setStatus('pending')
+      setErrorMessage(null)
+
+      const result = await verifyTeacherEmail(dispatchedToken)
+      if (currentTokenRef.current !== dispatchedToken) {
+        // L'utilisateur a navigué vers un autre token entre-temps ;
+        // cette réponse est obsolète et ne doit rien écraser.
+        return
+      }
       if (result.ok) {
         setStatus('success')
       } else if (result.status === 400) {
