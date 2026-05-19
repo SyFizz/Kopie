@@ -37,6 +37,47 @@ paths:
 
 components:
   schemas:
+    Teacher:
+      type: object
+      description: |
+        Représentation publique d'un compte enseignant (réponse API).
+        Ne contient JAMAIS de champ sensible (mot de passe, hash, secrets).
+      required: [id, email, display_name, status, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Identifiant UUID v4 unique de l'enseignant
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        email:
+          type: string
+          format: email
+          description: Adresse email de l'enseignant (servant aussi de login)
+          example: "marie.dupont@academie-versailles.fr"
+        display_name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Nom affiché choisi par l'enseignant
+          example: "Marie Dupont"
+        status:
+          type: string
+          enum: [pending, active]
+          description: |
+            Statut du compte :
+            - `pending` : compte créé mais email non confirmé (Story 1.3)
+            - `active` : compte confirmé et utilisable
+        created_at:
+          type: string
+          format: date-time
+          description: Horodatage ISO 8601 UTC de création
+          example: "2026-05-19T08:30:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          description: Horodatage ISO 8601 UTC de dernière modification
+          example: "2026-05-19T08:30:00Z"
+
     Error:
       type: object
       required: [error]

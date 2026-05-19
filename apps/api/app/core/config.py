@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     ]
     DATA_RETENTION_MONTHS: int = 12
 
+    OPENAPI_CONTRACT_PATH: str = "../../contracts/openapi.yaml"
+
     # SMTP (Story 1.3)
     SMTP_HOST: str = ""
     SMTP_PORT: int = 587

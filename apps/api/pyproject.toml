@@ -16,6 +16,7 @@ dependencies = [
     "httpx",
     "structlog",
     "slowapi",
+    "pyyaml>=6.0",
 ]
 
 [project.optional-dependencies]

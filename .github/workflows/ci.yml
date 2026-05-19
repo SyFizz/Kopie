@@ -75,10 +75,32 @@ jobs:
       - run: pnpm --filter web-prof test
       - run: pnpm --filter web-eleve test
 
+  verify-shared-types:
+    name: Front — Verify shared-types in sync with OpenAPI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - name: Regenerate shared-types from contracts/openapi.yaml
+        run: pnpm gen:types
+      - name: Verify no diff (types must be committed in sync)
+        run: |
+          if ! git diff --exit-code packages/shared-types/src/api.ts; then
+            echo "::error::shared-types out of sync — run \`pnpm gen:types\`"
+            exit 1
+          fi
+
   build:
     name: Build front
     runs-on: ubuntu-latest
-    needs: [lint-front, test-front]
+    needs: [lint-front, test-front, verify-shared-types]
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4

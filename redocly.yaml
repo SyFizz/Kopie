@@ -1,0 +1,25 @@
+extends:
+  - recommended
+
+rules:
+  # =========================================================================
+  # Règles désactivées (à ré-activer plus tard) :
+  # =========================================================================
+
+  # security-defined : exige qu'au moins une opération ait `security` défini
+  # ou que la racine ait `securitySchemes`. Sera ré-activé en Story 1.4
+  # quand le schéma JWT sera ajouté au contrat.
+  security-defined: off
+
+  # no-server-example.com : interdit les URL d'exemple comme localhost.
+  # Toléré au MVP car `http://localhost:8000` est l'URL de dev officielle.
+  no-server-example.com: off
+
+  # no-unused-components : warning si un schéma n'est référencé par aucune
+  # route. Les schémas Teacher et Error sont volontairement présents pour
+  # les stories futures (1.3+). Toléré.
+  no-unused-components: off
+
+  # operation-4xx-response : exige qu'une opération documente une réponse 4xx.
+  # `/health` ne renvoie pas d'erreur métier (juste 200 OK). Toléré.
+  operation-4xx-response: off

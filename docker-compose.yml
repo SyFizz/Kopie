@@ -39,12 +39,15 @@ services:
       # CORS piloté par .env ; défaut = dev local. À redéfinir pour staging/prod.
       CORS_ORIGINS: '${CORS_ORIGINS:-["http://localhost:5173","http://localhost:5174"]}'
       DATA_RETENTION_MONTHS: ${DATA_RETENTION_MONTHS:-12}
+      # Contrat OpenAPI monté en lecture seule depuis l'hôte (source de vérité unique).
+      OPENAPI_CONTRACT_PATH: /contracts/openapi.yaml
     ports:
       - "8000:8000"
     volumes:
       - ./apps/api/app:/app/app
       - ./apps/api/alembic:/app/alembic
       - ./apps/api/tests:/app/tests
+      - ./contracts:/contracts:ro
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8000/api/v1/health"]
       interval: 10s
