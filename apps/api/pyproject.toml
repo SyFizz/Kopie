@@ -17,6 +17,8 @@ dependencies = [
     "structlog",
     "slowapi",
     "pyyaml>=6.0",
+    "pydantic[email]>=2.13.4",
+    "bcrypt<5.0",
 ]
 
 [project.optional-dependencies]
@@ -51,3 +53,9 @@ ignore_missing_imports = true
 asyncio_mode = "auto"
 testpaths = ["tests"]
 pythonpath = ["."]
+
+[dependency-groups]
+dev = [
+    "aiosqlite>=0.22.1",
+    "pytest-mock>=3.15.1",
+]

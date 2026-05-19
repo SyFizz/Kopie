@@ -23,6 +23,9 @@ class Settings(BaseSettings):
     SMTP_USER: str = ""
     SMTP_PASSWORD: str = ""
 
+    # URL de base de l'API (Story 1.3 — construction des liens email de vérification)
+    APP_BASE_URL: str = "http://localhost:8000"
+
     # Rate limiting (FR-43)
     RATE_LIMIT_AUTH: str = "10/minute"
     RATE_LIMIT_STUDENT_ANSWERS: str = "60/minute"
