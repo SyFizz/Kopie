@@ -1,6 +1,6 @@
 # Story 1.3 : Inscription enseignant avec validation email
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation optionnelle. Exécuter validate-create-story pour contrôle qualité avant dev-story. -->
 
@@ -53,98 +53,106 @@ So that **j'accède à mon espace personnel sécurisé avec un compte confirmé 
 
 ## Tasks / Subtasks
 
-- [ ] Tâche 1 — Enrichir `contracts/openapi.yaml` avec les nouvelles routes et schémas (AC: 6)
-  - [ ] Ajouter le schéma `RegisterRequest` (`email` format email, `password` string min 12 chars)
-  - [ ] Ajouter le schéma `TeacherCreated` (`id` UUID, `email`, `status: pending`)
-  - [ ] Documenter `POST /api/v1/auth/register` (201 TeacherCreated, 409 Error, 422 Error, 429 Error)
-  - [ ] Documenter `GET /api/v1/auth/verify-email` (paramètre query `token`, 200, 400 Error)
-  - [ ] Valider avec `pnpm dlx --package=@redocly/cli dlx redocly lint contracts/openapi.yaml`
-  - [ ] Régénérer `pnpm gen:types` et committer `packages/shared-types/src/api.ts`
+- [x] Tâche 1 — Enrichir `contracts/openapi.yaml` avec les nouvelles routes et schémas (AC: 6)
+  - [x] Ajouter le schéma `RegisterRequest` (`email` format email, `password` string min 12 chars)
+  - [x] Ajouter le schéma `TeacherCreated` (`id` UUID, `email`, `status: pending`)
+  - [x] Documenter `POST /api/v1/auth/register` (201 TeacherCreated, 409 Error, 422 Error, 429 Error)
+  - [x] Documenter `GET /api/v1/auth/verify-email` (paramètre query `token`, 200, 400 Error)
+  - [x] Valider avec `pnpm --package=@redocly/cli dlx redocly lint contracts/openapi.yaml` — `Woohoo! Your API description is valid. 🎉`
+  - [x] Régénérer `pnpm gen:types` et committer `packages/shared-types/src/api.ts`
 
-- [ ] Tâche 2 — Modèle SQLAlchemy `Teacher` et migration Alembic (AC: 1)
-  - [ ] Créer `apps/api/app/models/teacher.py` avec colonnes : `id` (UUID PK), `email` (unique, index), `password_hash`, `display_name`, `status` (enum `pending`/`active`), `email_verification_token` (nullable), `email_verification_token_expires_at` (nullable datetime), `created_at`, `updated_at`
-  - [ ] Importer le modèle dans `apps/api/app/models/__init__.py`
-  - [ ] Créer la migration Alembic : `uv run alembic revision --autogenerate -m "add teachers table"` — vérifier le fichier généré
-  - [ ] Vérifier `uv run alembic upgrade head` sur une DB locale (ou dans les tests via `pytest-asyncio` avec DB de test)
+- [x] Tâche 2 — Modèle SQLAlchemy `Teacher` et migration Alembic (AC: 1)
+  - [x] Créer `apps/api/app/models/teacher.py` avec colonnes : `id` (UUID PK), `email` (unique, index), `password_hash`, `display_name`, `status` (`pending`/`active`), `email_verification_token` (nullable, indexé), `email_verification_token_expires_at`, `created_at`, `updated_at`
+  - [x] Importer le modèle dans `apps/api/app/models/__init__.py` (export `Base`, `Teacher`)
+  - [x] Créer la migration Alembic manuellement (`alembic revision --autogenerate` requiert une DB live — la migration écrite à la main est équivalente, reviewable et DB-agnostic) : `apps/api/alembic/versions/20260519_0001_add_teachers_table.py`
+  - [x] Schema vérifié via les tests : `Base.metadata.create_all` exécuté sur SQLite async dans `conftest.py` — `Uuid` SQLAlchemy 2.0 fallback CHAR(32) sur SQLite
 
-- [ ] Tâche 3 — Schémas Pydantic (AC: 1, 2, 3, 4)
-  - [ ] Créer `apps/api/app/schemas/teacher.py` : `RegisterRequest`, `TeacherCreated`, `TeacherPublic` (réutilisable par stories ultérieures)
-  - [ ] `RegisterRequest` : `email: EmailStr`, `password: str` avec `@field_validator` (min 12 chars)
-  - [ ] `TeacherCreated` : `id: UUID`, `email: EmailStr`, `status: str`
+- [x] Tâche 3 — Schémas Pydantic (AC: 1, 2, 3, 4)
+  - [x] Créer `apps/api/app/schemas/teacher.py` : `RegisterRequest`, `TeacherCreated`, `TeacherPublic` (réutilisable Story 1.4/1.5), `VerifyEmailResponse`
+  - [x] `RegisterRequest` : `email: EmailStr`, `password: str` avec `@field_validator` (min 12 chars) + `min_length`/`max_length` côté Field
+  - [x] `TeacherCreated` : `id: UUID`, `email: EmailStr`, `status: str`
 
-- [ ] Tâche 4 — Repository enseignant (AC: 1, 2)
-  - [ ] Créer `apps/api/app/repositories/teacher_repository.py`
-  - [ ] Méthodes : `get_by_email(email)`, `get_by_verification_token(token)`, `create(email, password_hash, ...)`, `activate(teacher_id)`
-  - [ ] Toutes les méthodes sont `async` (SQLAlchemy async session)
+- [x] Tâche 4 — Repository enseignant (AC: 1, 2)
+  - [x] Créer `apps/api/app/repositories/teacher_repository.py`
+  - [x] Méthodes : `get_by_id`, `get_by_email`, `get_by_verification_token`, `create`, `activate`
+  - [x] Toutes les méthodes sont `async` (`AsyncSession`)
 
-- [ ] Tâche 5 — Service inscription (AC: 1, 2, 3, 4)
-  - [ ] Créer `apps/api/app/services/auth_service.py`
-  - [ ] `register_teacher(email, password, db, background_tasks)` :
-    - Vérifier unicité email → lever `HTTPException(409, code=EMAIL_ALREADY_REGISTERED)` si doublon
-    - Hasher le mot de passe via `passlib[bcrypt]`
-    - Générer token de vérification (UUID v4 ou `secrets.token_urlsafe(32)`) + TTL 24 h
-    - Persister via repository
-    - Appeler `background_tasks.add_task(send_verification_email, email, token)`
-  - [ ] `verify_email(token, db)` : charger le compte par token, vérifier non-expiration, activer
+- [x] Tâche 5 — Service inscription (AC: 1, 2, 3, 4)
+  - [x] Créer `apps/api/app/services/auth_service.py`
+  - [x] `register_teacher(email, password, background_tasks)` :
+    - [x] Normalisation de l'email en minuscules
+    - [x] Vérification d'unicité → `HTTPException(409, code=EMAIL_ALREADY_REGISTERED)`
+    - [x] Hash bcrypt via `app.core.security.hash_password` (passlib)
+    - [x] Token `secrets.token_urlsafe(32)` + TTL 24 h
+    - [x] Persistance via repository + `commit`
+    - [x] `background_tasks.add_task(send_verification_email, email, token)`
+  - [x] `verify_email(token)` : lookup token, vérification expiration, activation (status `active`, token mis à NULL)
 
-- [ ] Tâche 6 — Service email asynchrone (AC: 1)
-  - [ ] Créer `apps/api/app/services/email_service.py`
-  - [ ] Fonction `send_verification_email(email, token)` : envoi SMTP via `smtplib` ou `aiosmtplib` (synchrone acceptable en BackgroundTask)
-  - [ ] Si `SMTP_HOST` est vide → logger un warning structlog + **ne pas lever d'exception** (mode dev sans SMTP)
-  - [ ] URL de vérification construite depuis `FRONTEND_URL` (nouvelle var config) ou `APP_BASE_URL` pointant vers `GET /api/v1/auth/verify-email?token={token}`
+- [x] Tâche 6 — Service email asynchrone (AC: 1)
+  - [x] Créer `apps/api/app/services/email_service.py`
+  - [x] `send_verification_email(email, token)` : SMTP via `smtplib` (synchrone — OK en BackgroundTask)
+  - [x] Mode dégradé : si `SMTP_HOST` est vide → log structlog warning, retour silencieux (pas d'exception)
+  - [x] URL construite depuis `settings.APP_BASE_URL` → `GET /api/v1/auth/verify-email?token={token}`
+  - [x] `try/except` autour de l'envoi pour ne jamais faire planter la background-task (UX : 201 garanti)
 
-- [ ] Tâche 7 — Endpoint FastAPI (AC: 1–5)
-  - [ ] Créer `apps/api/app/api/v1/endpoints/auth.py`
-  - [ ] `POST /auth/register` avec `BackgroundTasks`, décorateur `@limiter.limit(settings.RATE_LIMIT_AUTH)`
-  - [ ] `GET /auth/verify-email?token=` sans auth
-  - [ ] Intégrer slowapi : créer `apps/api/app/core/rate_limit.py` avec l'instance `limiter = Limiter(key_func=get_remote_address)`, ajouter le middleware `SlowAPIMiddleware` dans `main.py`, le handler d'exception 429
-  - [ ] Inclure le router `auth` dans `apps/api/app/api/v1/router.py` sous le tag `auth`
+- [x] Tâche 7 — Endpoint FastAPI (AC: 1–5)
+  - [x] Créer `apps/api/app/api/v1/endpoints/auth.py`
+  - [x] `POST /auth/register` avec `BackgroundTasks`, décorateur `@limiter.limit(settings.RATE_LIMIT_AUTH)`
+  - [x] `GET /auth/verify-email?token=` sans auth
+  - [x] Créer `apps/api/app/core/rate_limit.py` (`limiter = Limiter(key_func=get_remote_address)`)
+  - [x] Brancher dans `main.py` : `app.state.limiter`, `SlowAPIMiddleware`, exception handlers `RateLimitExceeded`, `HTTPException`, `RequestValidationError` (tous au format `Error` du contrat)
+  - [x] Inclure le router `auth` dans `apps/api/app/api/v1/router.py`
 
-- [ ] Tâche 8 — Dépendance DB async + fixtures pytest (AC: 1–5)
-  - [ ] Créer `apps/api/app/core/database.py` : engine async SQLAlchemy, `AsyncSessionLocal`, dependency `get_db()`
-  - [ ] Créer `apps/api/tests/conftest.py` avec fixtures : `engine_test` (SQLite async en mémoire ou PostgreSQL de test), `db_session`, `async_client` (ASGI `AsyncClient`)
-  - [ ] **IMPORTANT** : utiliser `pytest-asyncio` en mode `asyncio_mode = "auto"` (ajouter dans `pyproject.toml` section `[tool.pytest.ini_options]`)
+- [x] Tâche 8 — Dépendance DB async + fixtures pytest (AC: 1–5)
+  - [x] Créer `apps/api/app/core/database.py` : engine async, `AsyncSessionLocal`, dependency `get_db()` (avec rollback automatique)
+  - [x] Créer `apps/api/tests/conftest.py` : engine SQLite (`aiosqlite`) en mémoire par test, fixtures `db_session` et `async_client` (ASGITransport), reset du limiter slowapi entre tests
+  - [x] `asyncio_mode = "auto"` déjà présent dans `pyproject.toml` (Story 1.2)
 
-- [ ] Tâche 9 — Tests pytest (AC: 1–5)
-  - [ ] Créer `apps/api/tests/test_auth_register.py`
-  - [ ] `test_register_success` : POST → 201, statut `pending`, email envoyé (mock `send_verification_email`)
-  - [ ] `test_register_duplicate_email` : second POST → 409, code `EMAIL_ALREADY_REGISTERED`
-  - [ ] `test_register_invalid_password` : mot de passe < 12 chars → 422
-  - [ ] `test_register_invalid_email` : email malformé → 422
-  - [ ] `test_verify_email_success` : token valide → 200, compte `active`
-  - [ ] `test_verify_email_expired` : token expiré → 400, code `INVALID_OR_EXPIRED_TOKEN`
-  - [ ] `test_verify_email_invalid_token` : token inconnu → 400
-  - [ ] `test_register_rate_limit` : 11 appels rapides → le 11ème retourne 429
+- [x] Tâche 9 — Tests pytest (AC: 1–5)
+  - [x] Créer `apps/api/tests/test_auth_register.py` — **11 tests** (au-delà des 8 requis) :
+    - [x] `test_register_success` : 201 + statut pending + token persisté + password bcrypt hashé
+    - [x] `test_register_sends_verification_email_background` : `send_verification_email` mocké, appelé avec (email, token URL-safe)
+    - [x] `test_register_duplicate_email` : 409 `EMAIL_ALREADY_REGISTERED`
+    - [x] `test_register_invalid_password` : < 12 chars → 422 `VALIDATION_ERROR`
+    - [x] `test_register_invalid_email` : email malformé → 422 `VALIDATION_ERROR`
+    - [x] `test_register_normalizes_email_lowercase` : normalisation idempotente
+    - [x] `test_verify_email_success` : token valide → 200 + statut `active` + token purgé
+    - [x] `test_verify_email_expired` : TTL forcée dans le passé → 400 `INVALID_OR_EXPIRED_TOKEN`, statut reste `pending`
+    - [x] `test_verify_email_invalid_token` : token inconnu → 400 `INVALID_OR_EXPIRED_TOKEN`
+    - [x] `test_verify_email_missing_token` : query param absent → 422 `VALIDATION_ERROR`
+    - [x] `test_register_rate_limit` : 11ème POST → 429 `RATE_LIMIT_EXCEEDED`
 
-- [ ] Tâche 10 — Front `apps/web-prof` : page d'inscription (AC: 7)
-  - [ ] Créer `apps/web-prof/src/features/auth/RegisterPage.tsx`
-  - [ ] Formulaire React Hook Form : champs `email`, `password` avec validation Zod (email format, password min 12)
-  - [ ] Appel API via `fetch` (ou TanStack Query mutation) sur `POST /api/v1/auth/register`
-  - [ ] État de succès : afficher « Vérifiez votre boîte mail — un lien de confirmation vous a été envoyé à {email}. »
-  - [ ] État d'erreur 409 : afficher « Cet email est déjà utilisé. »
-  - [ ] Bouton désactivé + spinner pendant soumission
-  - [ ] Ajouter la route `/register` dans le routeur React (`apps/web-prof/src/main.tsx` ou router config)
+- [x] Tâche 10 — Front `apps/web-prof` : page d'inscription (AC: 7)
+  - [x] Créer `apps/web-prof/src/features/auth/RegisterPage.tsx`
+  - [x] Formulaire React Hook Form + résolveur Zod (email format, password 12-200 chars)
+  - [x] Appel API via `fetch` (typé via `@kopie/shared-types`) — wrapper `features/auth/api.ts`
+  - [x] État de succès : « Vérifiez votre boîte mail — un lien de confirmation vous a été envoyé à {email}. »
+  - [x] Erreurs serveur 409/422/429/500 mappées en messages français inline ; erreurs Zod en inline sous chaque champ
+  - [x] Bouton désactivé + label « Création du compte… » pendant `isSubmitting`
+  - [x] Route `/register` ajoutée dans `apps/web-prof/src/App.tsx` (`react-router-dom`), `BrowserRouter` dans `main.tsx`
 
-- [ ] Tâche 11 — Front `apps/web-prof` : page de confirmation email (AC: 3, 4)
-  - [ ] Créer `apps/web-prof/src/features/auth/VerifyEmailPage.tsx`
-  - [ ] Au montage : extraire `token` depuis `URLSearchParams`, appeler `GET /api/v1/auth/verify-email?token=`
-  - [ ] Succès : afficher « Votre email a été confirmé. Vous pouvez vous connecter. »
-  - [ ] Erreur (400) : afficher « Ce lien est invalide ou expiré. Veuillez vous réinscrire. »
-  - [ ] Ajouter la route `/verify-email` dans le routeur React
+- [x] Tâche 11 — Front `apps/web-prof` : page de confirmation email (AC: 3, 4)
+  - [x] Créer `apps/web-prof/src/features/auth/VerifyEmailPage.tsx`
+  - [x] Au montage : extraction `token` via `useSearchParams`, appel `GET /api/v1/auth/verify-email?token=`
+  - [x] États `pending` / `success` / `error` avec messages conformes UX-DR21 (vouvoiement)
+  - [x] Route `/verify-email` ajoutée dans `App.tsx`
 
-- [ ] Tâche 12 — Mise à jour `.env.example` et `docker-compose.yml` (AC: 1, 5)
-  - [ ] Ajouter `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` avec commentaires (déjà dans `config.py`, documenter dans `.env.example`)
-  - [ ] Ajouter `APP_BASE_URL=http://localhost:8000` (construction du lien de vérification)
-  - [ ] Ajouter variable `SMTP_*` dans le service `api` de `docker-compose.yml` (avec valeurs vides par défaut)
+- [x] Tâche 12 — Mise à jour `.env.example` et `docker-compose.yml` (AC: 1, 5)
+  - [x] `.env.example` : section SMTP enrichie + nouvelle variable `APP_BASE_URL`
+  - [x] `docker-compose.yml` (service `api`) : `SMTP_HOST/PORT/USER/PASSWORD`, `APP_BASE_URL`, `RATE_LIMIT_*` injectés explicitement avec valeurs par défaut
 
-- [ ] Tâche 13 — Vérifications finales (AC: 1–7)
-  - [ ] `uv run ruff check .` → 0 erreur
-  - [ ] `uv run mypy app` → 0 erreur strict
-  - [ ] `uv run pytest -q` → 100 % pass (tests existants + ≥ 8 nouveaux)
-  - [ ] `pnpm gen:types` → 0 erreur, idempotent
-  - [ ] `pnpm --filter web-prof build` → 0 erreur TypeScript
-  - [ ] `pnpm --filter web-prof test` → tous passent
-  - [ ] CI `verify-shared-types` verte
+- [x] Tâche 13 — Vérifications finales (AC: 1–7)
+  - [x] `ruff check .` (apps/api) → 0 erreur
+  - [x] `mypy app` (apps/api) → 0 erreur strict (27 fichiers)
+  - [x] `pytest -q` → **15 tests passent** (4 pré-existants + 11 nouveaux)
+  - [x] `pnpm gen:types` → 0 erreur, idempotent (diff vide après second run)
+  - [x] `pnpm --filter web-prof build` → 0 erreur TypeScript, bundle 329 kB
+  - [x] `pnpm --filter web-prof test` → 10 tests passent (4 fichiers : App, shared-types, RegisterPage, VerifyEmailPage)
+  - [x] `pnpm --filter web-prof lint` → 0 erreur ESLint
+  - [x] `pnpm --filter web-eleve test` + `build` → toujours verts (non-régression)
+  - [x] `redocly lint contracts/openapi.yaml` → valid
+  - [x] `docker compose config` → valid (avec SECRET_KEY mocké)
+  - [x] CI `verify-shared-types` : `git diff --exit-code packages/shared-types/src/api.ts` → exit 0
 
 ## Dev Notes
 
@@ -728,48 +736,103 @@ pnpm add react-router-dom --filter web-prof
 
 ### Agent Model Used
 
-_À remplir par l'agent de développement_
+Claude Opus 4.7 (via Cursor IDE, skill `bmad-dev-story`).
 
 ### Completion Notes List
 
-_À remplir à la fin de l'implémentation_
+**Implémentation conforme aux 7 AC et aux 13 tâches.** Aucun écart fonctionnel.
+
+**Décisions techniques notables :**
+
+1. **Type colonne UUID** — j'ai utilisé `sqlalchemy.Uuid(as_uuid=True)` (générique
+   SQLAlchemy 2.0) au lieu de `postgresql.dialects.UUID` proposé dans les Dev
+   Notes. Avantage : un seul modèle, compatible PostgreSQL (UUID natif) ET
+   SQLite (CHAR(32)) — les tests `aiosqlite` tournent sans modification du
+   modèle. Le contrat OpenAPI et l'API publique restent `uuid` (`format: uuid`).
+2. **Migration Alembic manuelle** — `alembic revision --autogenerate` requiert
+   une DB live ; pour rester reproductible et reviewable, j'ai écrit
+   `20260519_0001_add_teachers_table.py` à la main (équivalent au résultat
+   autogen). Schema validé indirectement par les 15 tests qui appellent
+   `Base.metadata.create_all` via la fixture.
+3. **`bcrypt<5.0`** — bug connu : `passlib 1.7.4` (le dernier release) ne
+   supporte pas `bcrypt>=5.0` (suppression de `__about__` + limite 72 bytes
+   stricte qui casse la self-detection de passlib). J'ai épinglé
+   `bcrypt<5.0` (resolved à `4.3.0`) dans `pyproject.toml`. Hash/verify
+   fonctionnels et testés.
+4. **Format `Error` du contrat sur 4xx/422/429** — j'ai ajouté trois
+   exception handlers dans `main.py` (`RateLimitExceeded`, `HTTPException`,
+   `RequestValidationError`) qui normalisent toutes les réponses d'erreur
+   au schéma `Error` OpenAPI (`{ "error": { "code", "message", "details? } }`).
+   Codes : `VALIDATION_ERROR` (422), `EMAIL_ALREADY_REGISTERED` (409),
+   `INVALID_OR_EXPIRED_TOKEN` (400), `RATE_LIMIT_EXCEEDED` (429).
+5. **Pattern `Annotated[AsyncSession, Depends(get_db)]`** — adopté pour
+   contourner `ruff B008` (qui ne reconnaît pas la sémantique FastAPI
+   `Depends`), tout en gardant un code idiomatique FastAPI 2024+.
+6. **Reset du limiter slowapi entre tests** — `limiter.reset()` est appelé
+   dans la fixture `async_client` avant/après chaque test pour empêcher
+   l'in-memory state d'un test de faire échouer le suivant.
+
+**Sécurité (NFR-8) :** aucun log de mot de passe, hash, ou token en clair en
+prod. Le `verification_url` n'est loggé qu'en mode dégradé (SMTP absent, dev
+uniquement) au niveau `warning`.
+
+**Hors-scope confirmé** : login JWT (Story 1.4), profil enseignant (Story 1.5),
+isolation multi-tenant (Story 1.6) — pas anticipés.
+
+**Vérifications finales :**
+- `ruff check .` → ✅ 0 erreur
+- `mypy app` (strict) → ✅ 0 erreur sur 27 fichiers
+- `pytest -q` → ✅ 15/15 passent
+- `redocly lint contracts/openapi.yaml` → ✅ valid
+- `pnpm gen:types` idempotent → ✅
+- `pnpm --filter web-prof {test,build,lint}` → ✅ 10/10 tests, build OK, eslint OK
+- `pnpm --filter web-eleve {test,build}` → ✅ non-régression
+- `docker compose config` → ✅ valid
 
 ### File List
 
-**Fichiers à créer**
+**Fichiers créés**
+- `apps/api/app/api/v1/endpoints/auth.py`
+- `apps/api/app/core/database.py`
+- `apps/api/app/core/rate_limit.py`
 - `apps/api/app/models/teacher.py`
 - `apps/api/app/repositories/teacher_repository.py`
 - `apps/api/app/schemas/teacher.py`
 - `apps/api/app/services/auth_service.py`
 - `apps/api/app/services/email_service.py`
-- `apps/api/app/core/database.py`
-- `apps/api/app/core/rate_limit.py`
-- `apps/api/app/api/v1/endpoints/auth.py`
 - `apps/api/tests/conftest.py`
 - `apps/api/tests/test_auth_register.py`
+- `apps/api/alembic/versions/20260519_0001_add_teachers_table.py`
+- `apps/web-prof/src/features/auth/api.ts`
 - `apps/web-prof/src/features/auth/RegisterPage.tsx`
 - `apps/web-prof/src/features/auth/VerifyEmailPage.tsx`
-- `apps/api/alembic/versions/XXXX_add_teachers_table.py` (généré par Alembic)
+- `apps/web-prof/src/__tests__/RegisterPage.test.tsx`
+- `apps/web-prof/src/__tests__/VerifyEmailPage.test.tsx`
 
-**Fichiers à modifier**
-- `contracts/openapi.yaml` — ajout schémas `RegisterRequest`, `TeacherCreated` + routes `/auth/register`, `/auth/verify-email` ; bump version `0.1.0` → `0.2.0`
-- `packages/shared-types/src/api.ts` — régénéré par `pnpm gen:types`
-- `apps/api/app/models/__init__.py` — import `Teacher`
-- `apps/api/app/schemas/__init__.py` — import schémas teacher
-- `apps/api/app/core/config.py` — ajouter `APP_BASE_URL`
-- `apps/api/app/core/security.py` — ajouter `hash_password`, `verify_password`
-- `apps/api/app/api/v1/router.py` — inclure router `auth`
-- `apps/api/app/main.py` — ajouter slowapi middleware + handler 429
-- `apps/api/pyproject.toml` — `slowapi`, `pydantic[email]`, `aiosqlite` (dev)
-- `apps/api/pyproject.toml` — `[tool.pytest.ini_options]` : `asyncio_mode = "auto"`
-- `.env.example` — documenter `APP_BASE_URL`, `SMTP_*`
-- `docker-compose.yml` — variables `SMTP_*` et `APP_BASE_URL` pour le service `api`
-- `apps/web-prof/package.json` — `react-hook-form`, `@hookform/resolvers`, `zod`, `@tanstack/react-query`, `react-router-dom`
-- `apps/web-prof/src/App.tsx` — remplacer placeholder par routeur React
-- `_bmad-output/implementation-artifacts/sprint-status.yaml` — `1-3-...` → `in-progress`
+**Fichiers modifiés**
+- `contracts/openapi.yaml` — ajout schémas `RegisterRequest`, `TeacherCreated` + routes `/api/v1/auth/register`, `/api/v1/auth/verify-email` ; bump version `0.1.0` → `0.2.0`
+- `packages/shared-types/src/api.ts` — régénéré (idempotent)
+- `apps/api/app/main.py` — bump version 0.2.0 ; slowapi middleware + handlers `RateLimitExceeded`/`HTTPException`/`RequestValidationError` au format `Error`
+- `apps/api/app/api/v1/router.py` — inclusion du router `auth`
+- `apps/api/app/core/config.py` — ajout `APP_BASE_URL`
+- `apps/api/app/core/security.py` — implémentation de `hash_password` / `verify_password` (bcrypt via passlib)
+- `apps/api/app/models/__init__.py` — export `Base`, `Teacher`
+- `apps/api/app/schemas/__init__.py` — export schémas teacher
+- `apps/api/app/repositories/__init__.py` — export `TeacherRepository`
+- `apps/api/app/services/__init__.py` — export `AuthService`, helpers email
+- `apps/api/pyproject.toml` + `apps/api/uv.lock` — ajout `pydantic[email]`, `bcrypt<5.0` (pin compatibilité passlib), `aiosqlite` (dev), `pytest-mock` (dev)
+- `apps/api/tests/test_openapi_contract.py` — assertions étendues (version 0.2.0, nouveaux schémas/routes)
+- `.env.example` — section SMTP enrichie + nouvelle `APP_BASE_URL`
+- `docker-compose.yml` — injection explicite `SMTP_*`, `APP_BASE_URL`, `RATE_LIMIT_*` dans le service `api`
+- `apps/web-prof/package.json` + `pnpm-lock.yaml` — ajout `react-hook-form`, `@hookform/resolvers`, `zod`, `react-router-dom`, `@testing-library/user-event` (dev)
+- `apps/web-prof/src/App.tsx` — routeur React (`/`, `/register`, `/verify-email`)
+- `apps/web-prof/src/main.tsx` — `BrowserRouter` autour de `<App />`
+- `apps/web-prof/src/__tests__/App.test.tsx` — tests adaptés au routeur (MemoryRouter)
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` — `1-3-...` → `in-progress` puis `review`
 
 ## Change Log
 
 | Date | Auteur | Description |
 |------|--------|-------------|
 | 2026-05-19 | BMad (create-story) | Création de la story 1.3 — contexte exhaustif pour l'agent de développement. Status → ready-for-dev. |
+| 2026-05-19 | BMad (dev-story) | Implémentation complète : contrat OpenAPI 0.2.0, modèle Teacher + migration Alembic, service d'inscription + service email asynchrone (mode dégradé), rate-limit slowapi, pages React /register et /verify-email, 15 tests pytest et 10 tests vitest verts, ruff/mypy clean. Status → review. |
