@@ -13,6 +13,30 @@ function buildUrl(path: string): string {
   return `${API_URL}${path}`
 }
 
+// `status: 0` est notre convention pour « pas de réponse HTTP » (DNS/CORS/offline).
+// Les appelants doivent traiter ce cas comme une erreur réseau, pas un 4xx/5xx.
+const NETWORK_ERROR = {
+  code: 'NETWORK_ERROR',
+  message: 'Impossible de joindre le serveur. Vérifiez votre connexion.',
+} as const
+
+async function parseErrorBody(
+  response: Response,
+): Promise<ApiError['error']> {
+  try {
+    const body = (await response.json()) as ApiError
+    if (body?.error?.code && body.error.message) {
+      return body.error
+    }
+  } catch {
+    // ignore: corps non-JSON ou vide
+  }
+  return {
+    code: 'UNEXPECTED_RESPONSE',
+    message: 'Réponse inattendue du serveur.',
+  }
+}
+
 export type RegisterResult =
   | { ok: true; data: TeacherCreated }
   | { ok: false; status: number; error: ApiError['error'] }
@@ -20,22 +44,27 @@ export type RegisterResult =
 export async function registerTeacher(
   payload: RegisterRequest,
 ): Promise<RegisterResult> {
-  const response = await fetch(buildUrl('/api/v1/auth/register'), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  })
-  if (response.status === 201) {
-    const data = (await response.json()) as TeacherCreated
-    return { ok: true, data }
-  }
-  let error: ApiError['error']
+  let response: Response
   try {
-    const body = (await response.json()) as ApiError
-    error = body.error
+    response = await fetch(buildUrl('/api/v1/auth/register'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
   } catch {
-    error = { code: 'NETWORK_ERROR', message: 'Erreur réseau inattendue.' }
+    return { ok: false, status: 0, error: { ...NETWORK_ERROR } }
   }
+
+  if (response.status === 201) {
+    try {
+      const data = (await response.json()) as TeacherCreated
+      return { ok: true, data }
+    } catch {
+      return { ok: false, status: response.status, error: { ...NETWORK_ERROR } }
+    }
+  }
+
+  const error = await parseErrorBody(response)
   return { ok: false, status: response.status, error }
 }
 
@@ -47,16 +76,17 @@ export async function verifyTeacherEmail(
   token: string,
 ): Promise<VerifyEmailResult> {
   const url = `${buildUrl('/api/v1/auth/verify-email')}?token=${encodeURIComponent(token)}`
-  const response = await fetch(url)
+  let response: Response
+  try {
+    response = await fetch(url)
+  } catch {
+    return { ok: false, status: 0, error: { ...NETWORK_ERROR } }
+  }
+
   if (response.status === 200) {
     return { ok: true }
   }
-  let error: ApiError['error']
-  try {
-    const body = (await response.json()) as ApiError
-    error = body.error
-  } catch {
-    error = { code: 'NETWORK_ERROR', message: 'Erreur réseau inattendue.' }
-  }
+
+  const error = await parseErrorBody(response)
   return { ok: false, status: response.status, error }
 }

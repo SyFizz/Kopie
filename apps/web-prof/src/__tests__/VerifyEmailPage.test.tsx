@@ -1,3 +1,4 @@
+import { StrictMode } from 'react'
 import { describe, expect, it, vi, afterEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
@@ -72,5 +73,46 @@ describe('VerifyEmailPage', () => {
         screen.getByText(/Lien de vérification incomplet/i),
       ).toBeInTheDocument()
     })
+  })
+
+  it("ne consomme le token qu'une seule fois en StrictMode (effet non idempotent)", async () => {
+    // En StrictMode dev, React monte deux fois l'effet. Le second call à
+    // /verify-email échouerait en 400 (token déjà consommé) — on s'assure
+    // ici que le composant n'effectue qu'un seul appel HTTP et reste sur
+    // l'écran succès.
+    let calls = 0
+    globalThis.fetch = vi.fn(async () => {
+      calls += 1
+      if (calls === 1) {
+        return new Response(JSON.stringify({ message: 'Email confirmé.' }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      }
+      return new Response(
+        JSON.stringify({
+          error: {
+            code: 'INVALID_OR_EXPIRED_TOKEN',
+            message: 'Ce lien est invalide ou expiré.',
+          },
+        }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } },
+      )
+    }) as unknown as typeof fetch
+
+    render(
+      <StrictMode>
+        <MemoryRouter initialEntries={['/verify-email?token=once']}>
+          <VerifyEmailPage />
+        </MemoryRouter>
+      </StrictMode>,
+    )
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('heading', { name: /Votre email est confirmé/i }),
+      ).toBeInTheDocument()
+    })
+    expect(calls).toBe(1)
   })
 })

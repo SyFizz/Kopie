@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 
 import { verifyTeacherEmail } from './api'
@@ -11,8 +11,21 @@ export function VerifyEmailPage() {
   const [status, setStatus] = useState<Status>('pending')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
+  // L'appel `verify-email` n'est PAS idempotent (le token est invalidé à la
+  // première utilisation). En `<StrictMode>` React invoque chaque effet deux
+  // fois en dev — sans précaution, le second appel renvoie 400
+  // « token expiré » et écrase l'état succès. On utilise une ref pour ne
+  // lancer qu'une seule fois par token vu, sans flag `cancelled` qui
+  // annulerait la mise à jour d'état du premier appel après la cleanup
+  // StrictMode (l'appel HTTP est court et le composant ne se démonte qu'à
+  // la navigation utilisateur, ce qui rend la course irréalisable en prod).
+  const dispatchedTokenRef = useRef<string | null>(null)
+
   useEffect(() => {
-    let cancelled = false
+    if (dispatchedTokenRef.current === token) {
+      return
+    }
+    dispatchedTokenRef.current = token
 
     async function run() {
       if (!token) {
@@ -21,23 +34,23 @@ export function VerifyEmailPage() {
         return
       }
       const result = await verifyTeacherEmail(token)
-      if (cancelled) return
       if (result.ok) {
         setStatus('success')
-      } else {
+      } else if (result.status === 400) {
         setStatus('error')
         setErrorMessage(
-          result.status === 400
-            ? 'Ce lien est invalide ou expiré. Veuillez vous réinscrire.'
-            : 'Une erreur est survenue. Veuillez réessayer.',
+          'Ce lien est invalide ou expiré. Veuillez vous réinscrire.',
         )
+      } else if (result.status === 0) {
+        setStatus('error')
+        setErrorMessage(result.error.message)
+      } else {
+        setStatus('error')
+        setErrorMessage('Une erreur est survenue. Veuillez réessayer.')
       }
     }
 
     void run()
-    return () => {
-      cancelled = true
-    }
   }, [token])
 
   return (

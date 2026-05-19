@@ -5,12 +5,21 @@ import { z } from 'zod'
 
 import { registerTeacher } from './api'
 
+// bcrypt impose une limite de 72 octets UTF-8 sur les mots de passe ;
+// nous appliquons la même règle côté formulaire pour éviter qu'un mdp
+// avec beaucoup de caractères multi-octets soit silencieusement tronqué.
+const PASSWORD_MAX_BYTES = 72
+const passwordByteEncoder = new TextEncoder()
+
 const registerSchema = z.object({
   email: z.string().email('Email invalide.'),
   password: z
     .string()
     .min(12, 'Minimum 12 caractères.')
-    .max(200, 'Maximum 200 caractères.'),
+    .refine(
+      (value) => passwordByteEncoder.encode(value).length <= PASSWORD_MAX_BYTES,
+      { message: 'Maximum 72 octets UTF-8 (≈ 72 caractères ASCII).' },
+    ),
 })
 
 export type RegisterFormData = z.infer<typeof registerSchema>
@@ -22,6 +31,8 @@ export function RegisterPage() {
   const {
     register,
     handleSubmit,
+    setError,
+    setFocus,
     formState: { errors, isSubmitting },
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
@@ -36,7 +47,18 @@ export function RegisterPage() {
       return
     }
     if (result.status === 409) {
-      setServerError('Cet email est déjà utilisé.')
+      // AC7 — l'erreur métier sur l'email doit s'afficher inline sous le
+      // champ concerné, comme une erreur de validation.
+      setError(
+        'email',
+        { type: 'server', message: 'Cet email est déjà utilisé.' },
+        { shouldFocus: true },
+      )
+      setFocus('email')
+      return
+    }
+    if (result.status === 0) {
+      setServerError(result.error.message)
     } else if (result.status === 422) {
       setServerError('Données invalides : vérifiez vos champs.')
     } else if (result.status === 429) {

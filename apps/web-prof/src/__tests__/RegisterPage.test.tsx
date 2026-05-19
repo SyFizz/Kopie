@@ -65,7 +65,7 @@ describe('RegisterPage', () => {
     expect(screen.getByText('prof@example.fr')).toBeInTheDocument()
   })
 
-  it('affiche un message d\'erreur sur réponse 409', async () => {
+  it("affiche l'erreur 409 sous le champ email (AC7)", async () => {
     globalThis.fetch = mockFetchOnce(409, {
       error: {
         code: 'EMAIL_ALREADY_REGISTERED',
@@ -79,16 +79,44 @@ describe('RegisterPage', () => {
         <RegisterPage />
       </MemoryRouter>,
     )
-    await user.type(
-      screen.getByLabelText(/Adresse email/i),
-      'duplicate@example.fr',
-    )
+    const emailInput = screen.getByLabelText(/Adresse email/i)
+    await user.type(emailInput, 'duplicate@example.fr')
     await user.type(
       screen.getByLabelText(/Mot de passe/i),
       'motdepasse123456',
     )
     await user.click(screen.getByRole('button', { name: /s'inscrire/i }))
 
-    expect(await screen.findByText(/Cet email est déjà utilisé/i)).toBeInTheDocument()
+    const fieldError = await screen.findByText(/Cet email est déjà utilisé/i)
+    // L'erreur doit cibler le champ email (lien `aria-describedby`).
+    expect(fieldError).toHaveAttribute('id', 'register-email-error')
+    expect(emailInput).toHaveAttribute(
+      'aria-describedby',
+      'register-email-error',
+    )
+    expect(emailInput).toHaveAttribute('aria-invalid', 'true')
+  })
+
+  it("affiche un message générique en cas d'erreur réseau (fetch rejette)", async () => {
+    globalThis.fetch = vi.fn(async () => {
+      throw new TypeError('Failed to fetch')
+    }) as unknown as typeof fetch
+
+    const user = userEvent.setup()
+    render(
+      <MemoryRouter>
+        <RegisterPage />
+      </MemoryRouter>,
+    )
+    await user.type(screen.getByLabelText(/Adresse email/i), 'prof@example.fr')
+    await user.type(
+      screen.getByLabelText(/Mot de passe/i),
+      'motdepasse123456',
+    )
+    await user.click(screen.getByRole('button', { name: /s'inscrire/i }))
+
+    expect(
+      await screen.findByText(/Impossible de joindre le serveur/i),
+    ).toBeInTheDocument()
   })
 })
