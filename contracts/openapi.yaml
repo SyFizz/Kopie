@@ -92,11 +92,13 @@ paths:
         - name: token
           in: query
           required: true
-          description: Token de vérification reçu par email (43 caractères URL-safe)
+          description: |
+            Token de vérification reçu par email (43 caractères URL-safe en
+            émission ; aucune contrainte de longueur stricte côté contrat —
+            tout token non reconnu côté serveur est mappé à 400
+            `INVALID_OR_EXPIRED_TOKEN`).
           schema:
             type: string
-            minLength: 16
-            maxLength: 128
       responses:
         "200":
           description: Email confirmé avec succès, compte activé
@@ -110,15 +112,9 @@ paths:
                     type: string
                     example: "Email confirmé."
         "400":
-          description: Token invalide, inconnu ou expiré
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
-        "422":
           description: |
-            Paramètre `token` manquant ou hors des bornes documentées
-            (longueur < 16 ou > 128 caractères).
+            Token invalide, inconnu, malformé ou expiré (toutes ces variantes
+            sont indistinguables côté client — cf. AC4).
           content:
             application/json:
               schema:

@@ -258,7 +258,12 @@ export interface operations {
     verifyTeacherEmail: {
         parameters: {
             query: {
-                /** @description Token de vérification reçu par email (43 caractères URL-safe) */
+                /**
+                 * @description Token de vérification reçu par email (43 caractères URL-safe en
+                 *     émission ; aucune contrainte de longueur stricte côté contrat —
+                 *     tout token non reconnu côté serveur est mappé à 400
+                 *     `INVALID_OR_EXPIRED_TOKEN`).
+                 */
                 token: string;
             };
             header?: never;
@@ -279,20 +284,11 @@ export interface operations {
                     };
                 };
             };
-            /** @description Token invalide, inconnu ou expiré */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
             /**
-             * @description Paramètre `token` manquant ou hors des bornes documentées
-             *     (longueur < 16 ou > 128 caractères).
+             * @description Token invalide, inconnu, malformé ou expiré (toutes ces variantes
+             *     sont indistinguables côté client — cf. AC4).
              */
-            422: {
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };

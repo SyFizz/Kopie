@@ -25,11 +25,14 @@ router = APIRouter(prefix="/auth")
 
 DbSession = Annotated[AsyncSession, Depends(get_db)]
 
-# Bornes alignées avec ``contracts/openapi.yaml`` (schema query param ``token``).
-# Permet à FastAPI de produire un 422 explicite au lieu de transmettre un token
-# manifestement malformé au service.
+# Le paramètre ``token`` est obligatoire — FastAPI renvoie 422 s'il est absent.
+# Aucune contrainte de longueur côté Query : un token *fourni* mais malformé
+# (trop court, trop long, caractères invalides) ne peut par construction
+# matcher aucune ligne en DB ; on délègue donc à ``AuthService.verify_email``
+# qui retourne 400 ``INVALID_OR_EXPIRED_TOKEN`` (cf. AC4) — c'est sémantiquement
+# correct et indistinguable d'un token expiré côté client.
 VerificationToken = Annotated[
-    str, Query(min_length=16, max_length=128, description="Token de vérification.")
+    str, Query(description="Token de vérification reçu par email.")
 ]
 
 

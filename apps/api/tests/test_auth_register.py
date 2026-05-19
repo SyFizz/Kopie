@@ -286,15 +286,18 @@ async def test_verify_email_missing_token(async_client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_verify_email_token_too_short_rejected(
+async def test_verify_email_token_malformed_returns_400(
     async_client: AsyncClient,
 ) -> None:
-    """Token < 16 caractères : rejet 422 aligné avec le contrat OpenAPI."""
-    response = await async_client.get(
-        "/api/v1/auth/verify-email", params={"token": "short"}
-    )
-    assert response.status_code == 422
-    assert response.json()["error"]["code"] == "VALIDATION_ERROR"
+    """AC4 — un token *fourni* mais malformé est indistinguable d'un token
+    expiré côté client : on doit renvoyer 400 ``INVALID_OR_EXPIRED_TOKEN``
+    (et non 422, qui est réservé au paramètre manquant)."""
+    for malformed in ("a", "short", "x" * 200, "###%%%###"):
+        response = await async_client.get(
+            "/api/v1/auth/verify-email", params={"token": malformed}
+        )
+        assert response.status_code == 400, (malformed, response.text)
+        assert response.json()["error"]["code"] == "INVALID_OR_EXPIRED_TOKEN"
 
 
 @pytest.mark.asyncio
