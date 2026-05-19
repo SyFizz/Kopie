@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-05-19
-last_updated: 2026-05-19  # updated by bmad-dev-story (1-3 → review)
+last_updated: 2026-05-19  # updated by bmad-dev-story patch (1-3 → review after review-patches)
 project: Kopie
 project_key: NOKEY
 tracking_system: file-system
