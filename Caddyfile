@@ -1,0 +1,8 @@
+# =========================================================================
+# Kopie — Caddyfile (PLACEHOLDER)
+# Sera rempli en Story 6.2 (HTTPS automatique avec Caddy) :
+#   - prof.kopie.cc → service web-prof
+#   - eleve.kopie.cc → service web-eleve
+#   - api.kopie.cc → service api
+#   - TLS automatique Let's Encrypt
+# =========================================================================

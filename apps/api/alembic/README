@@ -1,0 +1,13 @@
+Migrations Alembic — Kopie API
+================================
+Mode: async (asyncpg)
+URL: injectée depuis app.core.config.settings.DATABASE_URL
+
+Créer une migration :
+    uv run alembic revision --autogenerate -m "message"
+
+Appliquer :
+    uv run alembic upgrade head
+
+Revenir :
+    uv run alembic downgrade -1

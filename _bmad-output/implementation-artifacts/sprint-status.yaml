@@ -1,0 +1,107 @@
+# generated: 2026-05-19
+# last_updated: 2026-05-19
+# project: Kopie
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog → in-progress: Automatically when first story is created (via create-story)
+#   - in-progress → done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - Developer typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+
+generated: 2026-05-19
+last_updated: 2026-05-19  # updated by bmad-code-review
+project: Kopie
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts
+
+development_status:
+  # Epic 1: Fondation plateforme et espace enseignant
+  epic-1: in-progress
+  1-1-scaffold-monorepo-et-infrastructure-locale: done
+  1-2-contrat-openapi-initial-et-types-partages: backlog
+  1-3-inscription-enseignant-avec-validation-email: backlog
+  1-4-connexion-enseignant-et-gestion-de-session-jwt: backlog
+  1-5-gestion-du-profil-enseignant: backlog
+  1-6-isolation-des-donnees-enseignant: backlog
+  epic-1-retrospective: optional
+
+  # Epic 2: Composer et organiser les évaluations
+  epic-2: backlog
+  2-1-creer-une-evaluation-avec-questions-de-base: backlog
+  2-2-banque-de-questions-personnelle: backlog
+  2-3-variantes-d-evaluation-standard-et-pap: backlog
+  2-4-randomisation-des-questions-et-choix: backlog
+  2-5-parametres-de-session-sur-l-evaluation: backlog
+  2-6-import-de-questions-depuis-csv: backlog
+  2-7-specification-et-import-de-questions-depuis-markdown: backlog
+  epic-2-retrospective: optional
+
+  # Epic 3: Publier un accès individuel à un élève
+  epic-3: backlog
+  3-1-generer-un-acces-individuel-avec-lien-signe: backlog
+  3-2-configurer-les-amenagements-par-acces: backlog
+  3-3-copier-le-lien-et-confirmer-l-envoi: backlog
+  3-4-invalider-ou-reinitialiser-un-acces: backlog
+  3-5-historique-des-acces-avec-statuts: backlog
+  3-6-enforcement-de-la-fenetre-temporelle: backlog
+  epic-3-retrospective: optional
+
+  # Epic 4: Passer la session d'évaluation (côté élève)
+  epic-4: backlog
+  4-1-identification-eleve-et-bandeau-de-transparence: backlog
+  4-2-demarrage-en-plein-ecran: backlog
+  4-3-repondre-aux-questions-avec-navigation-conditionnelle: backlog
+  4-4-timer-visible-et-soumission-automatique: backlog
+  4-5-surveillance-d-integrite-et-journalisation: backlog
+  4-6-avertissements-non-bloquants-et-sauvegarde-incrementale: backlog
+  4-7-confirmation-et-ecran-de-fin-de-session: backlog
+  epic-4-retrospective: optional
+
+  # Epic 5: Consulter résultats, journal et corriger
+  epic-5: backlog
+  5-1-ingestion-et-stockage-du-journal-de-session: backlog
+  5-2-consulter-le-journal-resume-et-timeline: backlog
+  5-3-correction-automatique-des-questions-a-choix: backlog
+  5-4-correction-manuelle-des-questions-ouvertes: backlog
+  5-5-attribuer-note-et-appreciation: backlog
+  5-6-exporter-resultats-et-journal: backlog
+  epic-5-retrospective: optional
+
+  # Epic 6: Déployer, sécuriser et exploiter Kopie
+  epic-6: backlog
+  6-1-docker-compose-production-complet: backlog
+  6-2-https-automatique-avec-caddy: backlog
+  6-3-migrations-de-base-de-donnees-versionnees: backlog
+  6-4-configuration-environnement-et-purge-des-donnees: backlog
+  6-5-durcissement-securite-et-observabilite: backlog
+  6-6-documentation-auto-hebergement: backlog
+  6-7-instance-cloud-officielle: backlog
+  6-8-documentation-juridique-rgpd: backlog
+  epic-6-retrospective: optional

@@ -1,0 +1,9 @@
+# =========================================================================
+# Kopie — Production docker-compose (PLACEHOLDER)
+# Sera rempli en Story 6.1 (Docker Compose production complet) :
+#   - Images build multi-stage
+#   - Caddy reverse-proxy avec HTTPS automatique (Story 6.2)
+#   - Variables `.env` validées
+#   - Volumes nommés persistants
+#   - Politiques restart=always
+# =========================================================================

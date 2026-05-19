@@ -1,0 +1,59 @@
+openapi: "3.1.0"
+info:
+  title: Kopie API
+  version: "0.1.0"
+  description: |
+    Plateforme d'évaluation sécurisée — API REST.
+    Contrat versionné. Types front générés via openapi-typescript → @kopie/shared-types.
+  license:
+    name: AGPL-3.0-only
+    identifier: AGPL-3.0-only
+
+servers:
+  - url: http://localhost:8000
+    description: Développement local
+  - url: https://api.kopie.cc
+    description: Production
+
+paths:
+  /api/v1/health:
+    get:
+      operationId: getHealth
+      summary: Health check
+      description: Vérifie l'opérabilité de l'API.
+      tags: [system]
+      responses:
+        "200":
+          description: Service opérationnel
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status:
+                    type: string
+                    example: "ok"
+
+components:
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              description: Code erreur SCREAMING_SNAKE (ex. ACCESS_EXPIRED)
+              example: ACCESS_EXPIRED
+            message:
+              type: string
+              description: Message lisible côté client
+              example: L'accès a expiré.
+            details:
+              type: object
+              additionalProperties: true
+              description: Détails optionnels (champ, contraintes, etc.)

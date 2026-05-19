@@ -1,0 +1,23 @@
+# Empêche docker de copier ce qui doit être recréé/regénéré dans l'image.
+**/node_modules
+**/dist
+**/.vite
+**/.vite-temp
+**/.venv
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+**/tsconfig.tsbuildinfo
+**/tsconfig.*.tsbuildinfo
+**/uv.lock.tmp
+.git
+.github
+_bmad
+_bmad-output
+docs
+.cursor
+.claude
+.agents
+*.log

@@ -1,0 +1,46 @@
+# Node
+node_modules/
+dist/
+build/
+*.log
+.pnpm-store/
+.pnpm-debug.log*
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Environnement (NFR-4 : ne JAMAIS commiter le .env)
+.env
+.env.local
+.env.*.local
+!.env.example
+!.env.development
+
+# Éditeurs / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Couverture / tests
+coverage/
+.nyc_output/
+htmlcov/
+
+# Vite / TS
+.vite/
+*.tsbuildinfo
+
+# Docker
+docker-compose.override.yml

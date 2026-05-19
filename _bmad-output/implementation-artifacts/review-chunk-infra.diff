@@ -1,0 +1,3585 @@
+
+diff --git a/README.md b/README.md
+index 801acb3..db9b9eb 100644
+Binary files a/README.md and b/README.md differ
+diff --git a/.env.example b/.env.example
+new file mode 100644
+index 0000000..588e417
+--- /dev/null
++++ b/.env.example
+@@ -0,0 +1,34 @@
++# =========================================================================
++# Kopie ‘«ˆ Variables d'environnement
++# Copier en `.env` et adapter pour le d+Æveloppement local.
++# Ne JAMAIS commiter `.env` (NFR-4).
++# =========================================================================
++
++# --- Base de donn+Æes ----------------------------------------------------
++DATABASE_URL=postgresql+asyncpg://kopie:kopie@localhost:5432/kopie
++POSTGRES_USER=kopie
++POSTGRES_PASSWORD=kopie
++POSTGRES_DB=kopie
++
++# --- API ----------------------------------------------------------------
++SECRET_KEY=changeme-generate-with-openssl-rand-hex-32
++ACCESS_TOKEN_EXPIRE_MINUTES=15
++REFRESH_TOKEN_EXPIRE_DAYS=7
++
++# --- CORS (liste JSON) --------------------------------------------------
++CORS_ORIGINS=["http://localhost:5173","http://localhost:5174"]
++
++# --- SMTP (placeholder ‘«ˆ Story 1.3) -------------------------------------
++SMTP_HOST=
++SMTP_PORT=587
++SMTP_USER=
++SMTP_PASSWORD=
++
++# --- R+Ætention donn+Æes +Æl+øve (FR-41) ------------------------------------
++DATA_RETENTION_MONTHS=12
++
++# --- Rate limiting (FR-43 ‘«ˆ seuils ajustables) --------------------------
++RATE_LIMIT_AUTH=10/minute
++RATE_LIMIT_STUDENT_ANSWERS=60/minute
++RATE_LIMIT_STUDENT_EVENTS=30/minute
++RATE_LIMIT_STUDENT_SUBMIT=5/minute
+diff --git a/.gitignore b/.gitignore
+new file mode 100644
+index 0000000..e725170
+--- /dev/null
++++ b/.gitignore
+@@ -0,0 +1,46 @@
++# Node
++node_modules/
++dist/
++build/
++*.log
++.pnpm-store/
++.pnpm-debug.log*
++
++# Python
++__pycache__/
++*.pyc
++*.pyo
++*.pyd
++.venv/
++venv/
++*.egg-info/
++.pytest_cache/
++.mypy_cache/
++.ruff_cache/
++
++# Environnement (NFR-4 : ne JAMAIS commiter le .env)
++.env
++.env.local
++.env.*.local
++!.env.example
++!.env.development
++
++# +Îditeurs / IDE
++.vscode/
++.idea/
++*.swp
++*.swo
++.DS_Store
++Thumbs.db
++
++# Couverture / tests
++coverage/
++.nyc_output/
++htmlcov/
++
++# Vite / TS
++.vite/
++*.tsbuildinfo
++
++# Docker
++docker-compose.override.yml
+diff --git a/.dockerignore b/.dockerignore
+new file mode 100644
+index 0000000..770d748
+--- /dev/null
++++ b/.dockerignore
+@@ -0,0 +1,23 @@
++# Emp+¨che docker de copier ce qui doit +¨tre recr+Æ+Æ/reg+Æn+Ær+Æ dans l'image.
++**/node_modules
++**/dist
++**/.vite
++**/.vite-temp
++**/.venv
++**/__pycache__
++**/*.pyc
++**/.pytest_cache
++**/.mypy_cache
++**/.ruff_cache
++**/tsconfig.tsbuildinfo
++**/tsconfig.*.tsbuildinfo
++**/uv.lock.tmp
++.git
++.github
++_bmad
++_bmad-output
++docs
++.cursor
++.claude
++.agents
++*.log
+diff --git a/.npmrc b/.npmrc
+new file mode 100644
+index 0000000..23fe9e7
+--- /dev/null
++++ b/.npmrc
+@@ -0,0 +1,3 @@
++auto-install-peers=true
++strict-peer-dependencies=false
++shamefully-hoist=false
+diff --git a/package.json b/package.json
+new file mode 100644
+index 0000000..b0d785f
+--- /dev/null
++++ b/package.json
+@@ -0,0 +1,19 @@
++{
++  "name": "kopie",
++  "version": "0.1.0",
++  "private": true,
++  "description": "Kopie ‘«ˆ Plateforme d'+Ævaluation s+Æcuris+Æe (monorepo)",
++  "license": "AGPL-3.0-only",
++  "engines": {
++    "node": ">=22.12.0",
++    "pnpm": ">=10"
++  },
++  "scripts": {
++    "dev:prof": "pnpm --filter web-prof dev",
++    "dev:eleve": "pnpm --filter web-eleve dev",
++    "build": "pnpm -r build",
++    "test": "pnpm -r test",
++    "lint": "pnpm -r lint"
++  },
++  "packageManager": "pnpm@10.33.4"
++}
+diff --git a/pnpm-workspace.yaml b/pnpm-workspace.yaml
+new file mode 100644
+index 0000000..e9b0dad
+--- /dev/null
++++ b/pnpm-workspace.yaml
+@@ -0,0 +1,3 @@
++packages:
++  - 'apps/*'
++  - 'packages/*'
+diff --git a/pnpm-lock.yaml b/pnpm-lock.yaml
+new file mode 100644
+index 0000000..31795af
+--- /dev/null
++++ b/pnpm-lock.yaml
+@@ -0,0 +1,2346 @@
++lockfileVersion: '9.0'
++
++settings:
++  autoInstallPeers: true
++  excludeLinksFromLockfile: false
++
++importers:
++
++  .: {}
++
++  apps/web-eleve:
++    dependencies:
++      '@kopie/shared-types':
++        specifier: workspace:*
++        version: link:../../packages/shared-types
++      lucide-react:
++        specifier: ^1.16.0
++        version: 1.16.0(react@19.2.6)
++      react:
++        specifier: ^19.0.0
++        version: 19.2.6
++      react-dom:
++        specifier: ^19.0.0
++        version: 19.2.6(react@19.2.6)
++    devDependencies:
++      '@eslint/js':
++        specifier: ^9.17.0
++        version: 9.39.4
++      '@tailwindcss/vite':
++        specifier: ^4.3.0
++        version: 4.3.0(vite@8.0.13(@types/node@22.19.19)(jiti@2.7.0))
++      '@testing-library/jest-dom':
++        specifier: ^6.6.0
++        version: 6.9.1
++      '@testing-library/react':
++        specifier: ^16.3.0
++        version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
++      '@types/node':
++        specifier: ^22.10.0
++        version: 22.19.19
++      '@types/react':
++        specifier: ^19.0.0
++        version: 19.2.14
++      '@types/react-dom':
++        specifier: ^19.0.0
++        version: 19.2.3(@types/react@19.2.14)
++      '@vitejs/plugin-react':
++        specifier: ^6.0.0
++        version: 6.0.2(vite@8.0.13(@types/node@22.19.19)(jiti@2.7.0))
++      eslint:
++        specifier: ^9.17.0
++        version: 9.39.4(jiti@2.7.0)
++      jsdom:
++        specifier: ^29.0.0
++        version: 29.1.1
++      tailwindcss:
++        specifier: ^4.3.0
++        version: 4.3.0
++      typescript:
++        specifier: ~5.7.0
++        version: 5.7.3
++      vite:
++        specifier: ^8.0.0
++        version: 8.0.13(@types/node@22.19.19)(jiti@2.7.0)
++      vitest:
++        specifier: ^4.0.0
++        version: 4.1.6(@types/node@22.19.19)(jsdom@29.1.1)(vite@8.0.13(@types/node@22.19.19)(jiti@2.7.0))
++
++  apps/web-prof:
++    dependencies:
++      '@kopie/shared-types':
++        specifier: workspace:*
++        version: link:../../packages/shared-types
++      lucide-react:
++        specifier: ^1.16.0
++        version: 1.16.0(react@19.2.6)
++      react:
++        specifier: ^19.0.0
++        version: 19.2.6
++      react-dom:
++        specifier: ^19.0.0
++        version: 19.2.6(react@19.2.6)
++    devDependencies:
++      '@eslint/js':
++        specifier: ^9.17.0
++        version: 9.39.4
++      '@tailwindcss/vite':
++        specifier: ^4.3.0
++        version: 4.3.0(vite@8.0.13(@types/node@22.19.19)(jiti@2.7.0))
++      '@testing-library/jest-dom':
++        specifier: ^6.6.0
++        version: 6.9.1
++      '@testing-library/react':
++        specifier: ^16.3.0
++        version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
++      '@types/node':
++        specifier: ^22.10.0
++        version: 22.19.19
++      '@types/react':
++        specifier: ^19.0.0
++        version: 19.2.14
++      '@types/react-dom':
++        specifier: ^19.0.0
++        version: 19.2.3(@types/react@19.2.14)
++      '@vitejs/plugin-react':
++        specifier: ^6.0.0
++        version: 6.0.2(vite@8.0.13(@types/node@22.19.19)(jiti@2.7.0))
++      eslint:
++        specifier: ^9.17.0
++        version: 9.39.4(jiti@2.7.0)
++      jsdom:
++        specifier: ^29.0.0
++        version: 29.1.1
++      tailwindcss:
++        specifier: ^4.3.0
++        version: 4.3.0
++      typescript:
++        specifier: ~5.7.0
++        version: 5.7.3
++      vite:
++        specifier: ^8.0.0
++        version: 8.0.13(@types/node@22.19.19)(jiti@2.7.0)
++      vitest:
++        specifier: ^4.0.0
++        version: 4.1.6(@types/node@22.19.19)(jsdom@29.1.1)(vite@8.0.13(@types/node@22.19.19)(jiti@2.7.0))
++
++  packages/shared-types: {}
++
++packages:
++
++  '@adobe/css-tools@4.4.4':
++    resolution: {integrity: sha512-Elp+iwUx5rN5+Y8xLt5/GRoG20WGoDCQ/1Fb+1LiGtvwbDavuSk0jhD/eZdckHAuzcDzccnkv+rEjyWfRx18gg==}
++
++  '@asamuzakjp/css-color@5.1.11':
++    resolution: {integrity: sha512-KVw6qIiCTUQhByfTd78h2yD1/00waTmm9uy/R7Ck/ctUyAPj+AEDLkQIdJW0T8+qGgj3j5bpNKK7Q3G+LedJWg==}
++    engines: {node: ^20.19.0 || ^22.12.0 || >=24.0.0}
++
++  '@asamuzakjp/dom-selector@7.1.1':
++    resolution: {integrity: sha512-67RZDnYRc8H/8MLDgQCDE//zoqVFwajkepHZgmXrbwybzXOEwOWGPYGmALYl9J2DOLfFPPs6kKCqmbzV895hTQ==}
++    engines: {node: ^20.19.0 || ^22.12.0 || >=24.0.0}
++
++  '@asamuzakjp/generational-cache@1.0.1':
++    resolution: {integrity: sha512-wajfB8KqzMCN2KGNFdLkReeHncd0AslUSrvHVvvYWuU8ghncRJoA50kT3zP9MVL0+9g4/67H+cdvBskj9THPzg==}
++    engines: {node: ^20.19.0 || ^22.12.0 || >=24.0.0}
++
++  '@asamuzakjp/nwsapi@2.3.9':
++    resolution: {integrity: sha512-n8GuYSrI9bF7FFZ/SjhwevlHc8xaVlb/7HmHelnc/PZXBD2ZR49NnN9sMMuDdEGPeeRQ5d0hqlSlEpgCX3Wl0Q==}
++
++  '@babel/code-frame@7.29.0':
++    resolution: {integrity: sha512-9NhCeYjq9+3uxgdtp20LSiJXJvN0FeCtNGpJxuMFZ1Kv3cWUNb6DOhJwUvcVCzKGR66cw4njwM6hrJLqgOwbcw==}
++    engines: {node: '>=6.9.0'}
++
++  '@babel/helper-validator-identifier@7.28.5':
++    resolution: {integrity: sha512-qSs4ifwzKJSV39ucNjsvc6WVHs6b7S03sOh2OcHF9UHfVPqWWALUsNUVzhSBiItjRZoLHx7nIarVjqKVusUZ1Q==}
++    engines: {node: '>=6.9.0'}
++
++  '@babel/runtime@7.29.2':
++    resolution: {integrity: sha512-JiDShH45zKHWyGe4ZNVRrCjBz8Nh9TMmZG1kh4QTK8hCBTWBi8Da+i7s1fJw7/lYpM4ccepSNfqzZ/QvABBi5g==}
++    engines: {node: '>=6.9.0'}
++
++  '@bramus/specificity@2.4.2':
++    resolution: {integrity: sha512-ctxtJ/eA+t+6q2++vj5j7FYX3nRu311q1wfYH3xjlLOsczhlhxAg2FWNUXhpGvAw3BWo1xBcvOV6/YLc2r5FJw==}
++    hasBin: true
++
++  '@csstools/color-helpers@6.0.2':
++    resolution: {integrity: sha512-LMGQLS9EuADloEFkcTBR3BwV/CGHV7zyDxVRtVDTwdI2Ca4it0CCVTT9wCkxSgokjE5Ho41hEPgb8OEUwoXr6Q==}
++    engines: {node: '>=20.19.0'}
++
++  '@csstools/css-calc@3.2.1':
++    resolution: {integrity: sha512-DtdHlgXh5ZkA43cwBcAm+huzgJiwx3ZTWVjBs94kwz2xKqSimDA3lBgCjphYgwgVUMWatSM0pDd8TILB1yrVVg==}
++    engines: {node: '>=20.19.0'}
++    peerDependencies:
++      '@csstools/css-parser-algorithms': ^4.0.0
++      '@csstools/css-tokenizer': ^4.0.0
++
++  '@csstools/css-color-parser@4.1.1':
++    resolution: {integrity: sha512-eZ5XOtyhK+mggRafYUWzA0tvaYOFgdY8AkgQiCJF9qNAePnUo/zmsqqYubBBb3sQ8uNUaSKTY9s9klfRaAXL0g==}
++    engines: {node: '>=20.19.0'}
++    peerDependencies:
++      '@csstools/css-parser-algorithms': ^4.0.0
++      '@csstools/css-tokenizer': ^4.0.0
++
++  '@csstools/css-parser-algorithms@4.0.0':
++    resolution: {integrity: sha512-+B87qS7fIG3L5h3qwJ/IFbjoVoOe/bpOdh9hAjXbvx0o8ImEmUsGXN0inFOnk2ChCFgqkkGFQ+TpM5rbhkKe4w==}
++    engines: {node: '>=20.19.0'}
++    peerDependencies:
++      '@csstools/css-tokenizer': ^4.0.0
++
++  '@csstools/css-syntax-patches-for-csstree@1.1.4':
++    resolution: {integrity: sha512-wgsqt92b7C7tQhIdPNxj0n9zuUbQlvAuI1exyzeNrOKOi62SD7ren8zqszmpVREjAOqg8cD2FqYhQfAuKjk4sw==}
++    peerDependencies:
++      css-tree: ^3.2.1
++    peerDependenciesMeta:
++      css-tree:
++        optional: true
++
++  '@csstools/css-tokenizer@4.0.0':
++    resolution: {integrity: sha512-QxULHAm7cNu72w97JUNCBFODFaXpbDg+dP8b/oWFAZ2MTRppA3U00Y2L1HqaS4J6yBqxwa/Y3nMBaxVKbB/NsA==}
++    engines: {node: '>=20.19.0'}
++
++  '@emnapi/core@1.10.0':
++    resolution: {integrity: sha512-yq6OkJ4p82CAfPl0u9mQebQHKPJkY7WrIuk205cTYnYe+k2Z8YBh11FrbRG/H6ihirqcacOgl2BIO8oyMQLeXw==}
++
++  '@emnapi/runtime@1.10.0':
++    resolution: {integrity: sha512-ewvYlk86xUoGI0zQRNq/mC+16R1QeDlKQy21Ki3oSYXNgLb45GV1P6A0M+/s6nyCuNDqe5VpaY84BzXGwVbwFA==}
++
++  '@emnapi/wasi-threads@1.2.1':
++    resolution: {integrity: sha512-uTII7OYF+/Mes/MrcIOYp5yOtSMLBWSIoLPpcgwipoiKbli6k322tcoFsxoIIxPDqW01SQGAgko4EzZi2BNv2w==}
++
++  '@eslint-community/eslint-utils@4.9.1':
++    resolution: {integrity: sha512-phrYmNiYppR7znFEdqgfWHXR6NCkZEK7hwWDHZUjit/2/U0r6XvkDl0SYnoM51Hq7FhCGdLDT6zxCCOY1hexsQ==}
++    engines: {node: ^12.22.0 || ^14.17.0 || >=16.0.0}
++    peerDependencies:
++      eslint: ^6.0.0 || ^7.0.0 || >=8.0.0
++
++  '@eslint-community/regexpp@4.12.2':
++    resolution: {integrity: sha512-EriSTlt5OC9/7SXkRSCAhfSxxoSUgBm33OH+IkwbdpgoqsSsUg7y3uh+IICI/Qg4BBWr3U2i39RpmycbxMq4ew==}
++    engines: {node: ^12.0.0 || ^14.0.0 || >=16.0.0}
++
++  '@eslint/config-array@0.21.2':
++    resolution: {integrity: sha512-nJl2KGTlrf9GjLimgIru+V/mzgSK0ABCDQRvxw5BjURL7WfH5uoWmizbH7QB6MmnMBd8cIC9uceWnezL1VZWWw==}
++    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
++
++  '@eslint/config-helpers@0.4.2':
++    resolution: {integrity: sha512-gBrxN88gOIf3R7ja5K9slwNayVcZgK6SOUORm2uBzTeIEfeVaIhOpCtTox3P6R7o2jLFwLFTLnC7kU/RGcYEgw==}
++    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
++
++  '@eslint/core@0.17.0':
++    resolution: {integrity: sha512-yL/sLrpmtDaFEiUj1osRP4TI2MDz1AddJL+jZ7KSqvBuliN4xqYY54IfdN8qD8Toa6g1iloph1fxQNkjOxrrpQ==}
++    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
++
++  '@eslint/eslintrc@3.3.5':
++    resolution: {integrity: sha512-4IlJx0X0qftVsN5E+/vGujTRIFtwuLbNsVUe7TO6zYPDR1O6nFwvwhIKEKSrl6dZchmYBITazxKoUYOjdtjlRg==}
++    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
++
++  '@eslint/js@9.39.4':
++    resolution: {integrity: sha512-nE7DEIchvtiFTwBw4Lfbu59PG+kCofhjsKaCWzxTpt4lfRjRMqG6uMBzKXuEcyXhOHoUp9riAm7/aWYGhXZ9cw==}
++    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
++
++  '@eslint/object-schema@2.1.7':
++    resolution: {integrity: sha512-VtAOaymWVfZcmZbp6E2mympDIHvyjXs/12LqWYjVw6qjrfF+VK+fyG33kChz3nnK+SU5/NeHOqrTEHS8sXO3OA==}
++    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
++
++  '@eslint/plugin-kit@0.4.1':
++    resolution: {integrity: sha512-43/qtrDUokr7LJqoF2c3+RInu/t4zfrpYdoSDfYyhg52rwLV6TnOvdG4fXm7IkSB3wErkcmJS9iEhjVtOSEjjA==}
++    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
++
++  '@exodus/bytes@1.15.0':
++    resolution: {integrity: sha512-UY0nlA+feH81UGSHv92sLEPLCeZFjXOuHhrIo0HQydScuQc8s0A7kL/UdgwgDq8g8ilksmuoF35YVTNphV2aBQ==}
++    engines: {node: ^20.19.0 || ^22.12.0 || >=24.0.0}
++    peerDependencies:
++      '@noble/hashes': ^1.8.0 || ^2.0.0
++    peerDependenciesMeta:
++      '@noble/hashes':
++        optional: true
++
++  '@humanfs/core@0.19.2':
++    resolution: {integrity: sha512-UhXNm+CFMWcbChXywFwkmhqjs3PRCmcSa/hfBgLIb7oQ5HNb1wS0icWsGtSAUNgefHeI+eBrA8I1fxmbHsGdvA==}
++    engines: {node: '>=18.18.0'}
++
++  '@humanfs/node@0.16.8':
++    resolution: {integrity: sha512-gE1eQNZ3R++kTzFUpdGlpmy8kDZD/MLyHqDwqjkVQI0JMdI1D51sy1H958PNXYkM2rAac7e5/CnIKZrHtPh3BQ==}
++    engines: {node: '>=18.18.0'}
++
++  '@humanfs/types@0.15.0':
++    resolution: {integrity: sha512-ZZ1w0aoQkwuUuC7Yf+7sdeaNfqQiiLcSRbfI08oAxqLtpXQr9AIVX7Ay7HLDuiLYAaFPu8oBYNq/QIi9URHJ3Q==}
++    engines: {node: '>=18.18.0'}
++
++  '@humanwhocodes/module-importer@1.0.1':
++    resolution: {integrity: sha512-bxveV4V8v5Yb4ncFTT3rPSgZBOpCkjfK0y4oVVVJwIuDVBRMDXrPyXRL988i5ap9m9bnyEEjWfm5WkBmtffLfA==}
++    engines: {node: '>=12.22'}
++
++  '@humanwhocodes/retry@0.4.3':
++    resolution: {integrity: sha512-bV0Tgo9K4hfPCek+aMAn81RppFKv2ySDQeMoSZuvTASywNTnVJCArCZE2FWqpvIatKu7VMRLWlR1EazvVhDyhQ==}
++    engines: {node: '>=18.18'}
++
++  '@jridgewell/gen-mapping@0.3.13':
++    resolution: {integrity: sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA==}
++
++  '@jridgewell/remapping@2.3.5':
++    resolution: {integrity: sha512-LI9u/+laYG4Ds1TDKSJW2YPrIlcVYOwi2fUC6xB43lueCjgxV4lffOCZCtYFiH6TNOX+tQKXx97T4IKHbhyHEQ==}
++
++  '@jridgewell/resolve-uri@3.1.2':
++    resolution: {integrity: sha512-bRISgCIjP20/tbWSPWMEi54QVPRZExkuD9lJL+UIxUKtwVJA8wW1Trb1jMs1RFXo1CBTNZ/5hpC9QvmKWdopKw==}
++    engines: {node: '>=6.0.0'}
++
++  '@jridgewell/sourcemap-codec@1.5.5':
++    resolution: {integrity: sha512-cYQ9310grqxueWbl+WuIUIaiUaDcj7WOq5fVhEljNVgRfOUhY9fy2zTvfoqWsnebh8Sl70VScFbICvJnLKB0Og==}
++
++  '@jridgewell/trace-mapping@0.3.31':
++    resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
++
++  '@napi-rs/wasm-runtime@1.1.4':
++    resolution: {integrity: sha512-3NQNNgA1YSlJb/kMH1ildASP9HW7/7kYnRI2szWJaofaS1hWmbGI4H+d3+22aGzXXN9IJ+n+GiFVcGipJP18ow==}
++    peerDependencies:
++      '@emnapi/core': ^1.7.1
++      '@emnapi/runtime': ^1.7.1
++
++  '@oxc-project/types@0.130.0':
++    resolution: {integrity: sha512-ibD2usx9JRu7f5pu2tMKMI4cpA4NgXJQoYRP4pQ7Pxmn1l6k/53qWtQWZayhYy3X4QZkt90Ot+mJEaeXouio6Q==}
++
++  '@rolldown/binding-android-arm64@1.0.1':
++    resolution: {integrity: sha512-fJI3I0r3C3Oj/zdBCpaCmBRZYf07xpaq4yCfDDoSFm+beWNzbIl26puW8RraUdugoJw/95zerNOn6jasAhzSmg==}
++    engines: {node: ^20.19.0 || >=22.12.0}
++    cpu: [arm64]
++    os: [android]
++
++  '@rolldown/binding-darwin-arm64@1.0.1':
++    resolution: {integrity: sha512-cKnAhWEsV7TPcA/5EAteDp6KcJZBQ2G+BqE7zayMMi7kMvwRsbv7WT9aOnn0WNl4SKEIf43vjS31iUPu80nzXg==}
++    engines: {node: ^20.19.0 || >=22.12.0}
++    cpu: [arm64]
++    os: [darwin]
++
++  '@rolldown/binding-darwin-x64@1.0.1':
++    resolution: {integrity: sha512-YKrVwQjIRBPo+5G/u03wGjbdy4q7pyzCe93DK9VJ7zkVmeg8LJ7GbgsiHWdR4xSoe4CAXRD7Bcjgbtr64bkXNg==}
++    engines: {node: ^20.19.0 || >=22.12.0}
++    cpu: [x64]
++    os: [darwin]
++
++  '@rolldown/binding-freebsd-x64@1.0.1':
++    resolution: {integrity: sha512-z/oBsREo46SsFqBwYtFe0kpJeBijAT48O/WXLI4suiCLBkr03RTtTJMCzSdDd2znlh8VJizL09XVkQgk8IZonw==}
++    engines: {node: ^20.19.0 || >=22.12.0}
++    cpu: [x64]
++    os: [freebsd]
++
++  '@rolldown/binding-linux-arm-gnueabihf@1.0.1':
++    resolution: {integrity: sha512-ik8q7GM11zxvYxFc2PeDcT6TBvhCQMaUxfph/M5l9sKuTs/Sjg3L+Byw0F7w0ZVLBZmx30P+gG0ECzzN+MFcmQ==}
++    engines: {node: ^20.19.0 || >=22.12.0}
++    cpu: [arm]
++    os: [linux]
++
++  '@rolldown/binding-linux-arm64-gnu@1.0.1':
++    resolution: {integrity: sha512-QoSx2EkyrrdZ6kcyE8stqZ62t0Yra8Fs5ia9lOxJrh6TMQJK7gQKmscdTHf7pOXKREKrVwOtJcQG3qVSfc866A==}
++    engines: {node: ^20.19.0 || >=22.12.0}
++    cpu: [arm64]
++    os: [linux]
++    libc: [glibc]
++
++  '@rolldown/binding-linux-arm64-musl@1.0.1':
++    resolution: {integrity: sha512-uwNwFpwKeNiZawfAWBgg0VIztPTV3ihhh1vV334h9ivnNLorxnQMU6Fz8wG1Zb4Qh9LC1/MkcyT3YlDXG3Rsgg==}
++    engines: {node: ^20.19.0 || >=22.12.0}
++    cpu: [arm64]
++    os: [linux]
++    libc: [musl]
++
++  '@rolldown/binding-linux-ppc64-gnu@1.0.1':
++    resolution: {integrity: sha512-zY1bul7OWr7DFBiJ++wofXvnr8B45ce3QsQUhKrIhXsygAh7bTkwyeM1bi1a2g5C/yC/N8TZyGDEoMfm/l9mpg==}
++    engines: {node: ^20.19.0 || >=22.12.0}
++    cpu: [ppc64]
++    os: [linux]
++    libc: [glibc]
++
++  '@rolldown/binding-linux-s390x-gnu@1.0.1':
++    resolution: {integrity: sha512-0frlsT/f4Ft6I7SMESTKnF3cZsdicQn1dCMkF/jT9wDLE+gGoiQfv1nmT9e+s7s/fekvvy6tZM2jHvI2tkbJDQ==}
++    engines: {node: ^20.19.0 || >=22.12.0}
++    cpu: [s390x]
++    os: [linux]
++    libc: [glibc]
++
++  '@rolldown/binding-linux-x64-gnu@1.0.1':
++    resolution: {integrity: sha512-XABVmGp9Tg0WspTVvwduTc4fpqy6JnAUrSQe6OuyqD/03nI7r0O9OWUkMIwFrjKAIqolvqoA4ZrJppgwE0Gxmw==}
++    engines: {node: ^20.19.0 || >=22.12.0}
++    cpu: [x64]
++    os: [linux]
++    libc: [glibc]
++
++  '@rolldown/binding-linux-x64-musl@1.0.1':
++    resolution: {integrity: sha512-bV4fzswuzVcKD90o/VM6QqKxnxlDq0g2BISDLNVmxrnhpv1DDbyPhCIjYfvzYLV+MvkKKnQt2Q6AO86SEBULUQ==}
++    engines: {node: ^20.19.0 || >=22.12.0}
++    cpu: [x64]
++    os: [linux]
++    libc: [musl]
++
++  '@rolldown/binding-openharmony-arm64@1.0.1':
++    resolution: {integrity: sha512-/Mh0Zhq3OP7fVs0kcQHZP6lZEthMGTaSf8UBQYSFEZDWGXXlEC+nJ6EqenaK2t4LBXMe3A+K/G2BVXXdtOr4PQ==}
++    engines: {node: ^20.19.0 || >=22.12.0}
++    cpu: [arm64]
++    os: [openharmony]
++
++  '@rolldown/binding-wasm32-wasi@1.0.1':
++    resolution: {integrity: sha512-+1xc9X45l8ufsBAm6Gjvx2qDRIY9lTVt0cgWNcJ+1gdhXvkbxePA60yRTwSTuXL09CMhyJmjpV7E3NoyxbqFQQ==}
++    engines: {node: ^20.19.0 || >=22.12.0}
++    cpu: [wasm32]
++
++  '@rolldown/binding-win32-arm64-msvc@1.0.1':
++    resolution: {integrity: sha512-1D+UqZdfnuR+Jy1GgMJwi85bD40H21uNmOPRWQhw4oRSuolZ/B5rixZ45DK2KXOTCvmVCecauWgEhbw8bI7tOw==}
++    engines: {node: ^20.19.0 || >=22.12.0}
++    cpu: [arm64]
++    os: [win32]
++
++  '@rolldown/binding-win32-x64-msvc@1.0.1':
++    resolution: {integrity: sha512-INAycaWuhlOK3wk4mRHGsdgwYWmd9cChdPdE9bwWmy6rn9VqVNYNFGhOdXrofXUxwHIncSiPNb8tNm8knDVIeQ==}
++    engines: {node: ^20.19.0 || >=22.12.0}
++    cpu: [x64]
++    os: [win32]
++
++  '@rolldown/pluginutils@1.0.1':
++    resolution: {integrity: sha512-2j9bGt5Jh8hj+vPtgzPtl72j0yRxHAyumoo6TNfAjsLB04UtpSvPbPcDcBMxz7n+9CYB0c1GxQFxYRg2jimqGw==}
++
++  '@standard-schema/spec@1.1.0':
++    resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
++
++  '@tailwindcss/node@4.3.0':
++    resolution: {integrity: sha512-aFb4gUhFOgdh9AXo4IzBEOzBkkAxm9VigwDJnMIYv3lcfXCJVesNfbEaBl4BNgVRyid92AmdviqwBUBRKSeY3g==}
++
++  '@tailwindcss/oxide-android-arm64@4.3.0':
++    resolution: {integrity: sha512-TJPiq67tKlLuObP6RkwvVGDoxCMBVtDgKkLfa/uyj7/FyxvQwHS+UOnVrXXgbEsfUaMgiVvC4KbJnRr26ho4Ng==}
++    engines: {node: '>= 20'}
++    cpu: [arm64]
++    os: [android]
++
++  '@tailwindcss/oxide-darwin-arm64@4.3.0':
++    resolution: {integrity: sha512-oMN/WZRb+SO37BmUElEgeEWuU8E/HXRkiODxJxLe1UTHVXLrdVSgfaJV7pSlhRGMSOiXLuxTIjfsF3wYvz8cgQ==}
++    engines: {node: '>= 20'}
++    cpu: [arm64]
++    os: [darwin]
++
++  '@tailwindcss/oxide-darwin-x64@4.3.0':
++    resolution: {integrity: sha512-N6CUmu4a6bKVADfw77p+iw6Yd9Q3OBhe0veaDX+QazfuVYlQsHfDgxBrsjQ/IW+zywL8mTrNd0SdJT/zgtvMdA==}
++    engines: {node: '>= 20'}
++    cpu: [x64]
++    os: [darwin]
++
++  '@tailwindcss/oxide-freebsd-x64@4.3.0':
++    resolution: {integrity: sha512-zDL5hBkQdH5C6MpqbK3gQAgP80tsMwSI26vjOzjJtNCMUo0lFgOItzHKBIupOZNQxt3ouPH7RPhvNhiTfCe5CQ==}
++    engines: {node: '>= 20'}
++    cpu: [x64]
++    os: [freebsd]
++
++  '@tailwindcss/oxide-linux-arm-gnueabihf@4.3.0':
++    resolution: {integrity: sha512-R06HdNi7A7OEoMsf6d4tjZ71RCWnZQPHj2mnotSFURjNLdBC+cIgXQ7l81CqeoiQftjf6OOblxXMInMgN2VzMA==}
++    engines: {node: '>= 20'}
++    cpu: [arm]
++    os: [linux]
++
++  '@tailwindcss/oxide-linux-arm64-gnu@4.3.0':
++    resolution: {integrity: sha512-qTJHELX8jetjhRQHCLilkVLmybpzNQAtaI/gaoVoidn/ufbNDbAo8KlK2J+yPoc8wQxvDxCmh/5lr8nC1+lTbg==}
++    engines: {node: '>= 20'}
++    cpu: [arm64]
++    os: [linux]
++    libc: [glibc]
++
++  '@tailwindcss/oxide-linux-arm64-musl@4.3.0':
++    resolution: {integrity: sha512-Z6sukiQsngnWO+l39X4pPbiWT81IC+PLKF+PHxIlyZbGNb9MODfYlXEVlFvej5BOZInWX01kVyzeLvHsXhfczQ==}
++    engines: {node: '>= 20'}
++    cpu: [arm64]
++    os: [linux]
++    libc: [musl]
++
++  '@tailwindcss/oxide-linux-x64-gnu@4.3.0':
++    resolution: {integrity: sha512-DRNdQRpSGzRGfARVuVkxvM8Q12nh19l4BF/G7zGA1oe+9wcC6saFBHTISrpIcKzhiXtSrlSrluCfvMuledoCTQ==}
++    engines: {node: '>= 20'}
++    cpu: [x64]
++    os: [linux]
++    libc: [glibc]
++
++  '@tailwindcss/oxide-linux-x64-musl@4.3.0':
++    resolution: {integrity: sha512-Z0IADbDo8bh6I7h2IQMx601AdXBLfFpEdUotft86evd/8ZPflZe9COPO8Q1vw+pfLWIUo9zN/JGZvwuAJqduqg==}
++    engines: {node: '>= 20'}
++    cpu: [x64]
++    os: [linux]
++    libc: [musl]
++
++  '@tailwindcss/oxide-wasm32-wasi@4.3.0':
++    resolution: {integrity: sha512-HNZGOUxEmElksYR7S6sC5jTeNGpobAsy9u7Gu0AskJ8/20FR9GqebUyB+HBcU/ax6BHuiuJi+Oda4B+YX6H1yA==}
++    engines: {node: '>=14.0.0'}
++    cpu: [wasm32]
++    bundledDependencies:
++      - '@napi-rs/wasm-runtime'
++      - '@emnapi/core'
++      - '@emnapi/runtime'
++      - '@tybys/wasm-util'
++      - '@emnapi/wasi-threads'
++      - tslib
++
++  '@tailwindcss/oxide-win32-arm64-msvc@4.3.0':
++    resolution: {integrity: sha512-Pe+RPVTi1T+qymuuRpcdvwSVZjnll/f7n8gBxMMh3xLTctMDKqpdfGimbMyioqtLhUYZxdJ9wGNhV7MKHvgZsQ==}
++    engines: {node: '>= 20'}
++    cpu: [arm64]
++    os: [win32]
++
++  '@tailwindcss/oxide-win32-x64-msvc@4.3.0':
++    resolution: {integrity: sha512-Mvrf2kXW/yeW/OTezZlCGOirXRcUuLIBx/5Y12BaPM7wJoryG6dfS/NJL8aBPqtTEx/Vm4T4vKzFUcKDT+TKUA==}
++    engines: {node: '>= 20'}
++    cpu: [x64]
++    os: [win32]
++
++  '@tailwindcss/oxide@4.3.0':
++    resolution: {integrity: sha512-F7HZGBeN9I0/AuuJS5PwcD8xayx5ri5GhjYUDBEVYUkexyA/giwbDNjRVrxSezE3T250OU2K/wp/ltWx3UOefg==}
++    engines: {node: '>= 20'}
++
++  '@tailwindcss/vite@4.3.0':
++    resolution: {integrity: sha512-t6J3OrB5Fc0ExuhohouH0fWUGMYL6PTLhW+E7zIk/pdbnJARZDCwjBznFnkh5ynRnIRSI4YjtTH0t6USjJISrw==}
++    peerDependencies:
++      vite: ^5.2.0 || ^6 || ^7 || ^8
++
++  '@testing-library/dom@10.4.1':
++    resolution: {integrity: sha512-o4PXJQidqJl82ckFaXUeoAW+XysPLauYI43Abki5hABd853iMhitooc6znOnczgbTYmEP6U6/y1ZyKAIsvMKGg==}
++    engines: {node: '>=18'}
++
++  '@testing-library/jest-dom@6.9.1':
++    resolution: {integrity: sha512-zIcONa+hVtVSSep9UT3jZ5rizo2BsxgyDYU7WFD5eICBE7no3881HGeb/QkGfsJs6JTkY1aQhT7rIPC7e+0nnA==}
++    engines: {node: '>=14', npm: '>=6', yarn: '>=1'}
++
++  '@testing-library/react@16.3.2':
++    resolution: {integrity: sha512-XU5/SytQM+ykqMnAnvB2umaJNIOsLF3PVv//1Ew4CTcpz0/BRyy/af40qqrt7SjKpDdT1saBMc42CUok5gaw+g==}
++    engines: {node: '>=18'}
++    peerDependencies:
++      '@testing-library/dom': ^10.0.0
++      '@types/react': ^18.0.0 || ^19.0.0
++      '@types/react-dom': ^18.0.0 || ^19.0.0
++      react: ^18.0.0 || ^19.0.0
++      react-dom: ^18.0.0 || ^19.0.0
++    peerDependenciesMeta:
++      '@types/react':
++        optional: true
++      '@types/react-dom':
++        optional: true
++
++  '@tybys/wasm-util@0.10.2':
++    resolution: {integrity: sha512-RoBvJ2X0wuKlWFIjrwffGw1IqZHKQqzIchKaadZZfnNpsAYp2mM0h36JtPCjNDAHGgYez/15uMBpfGwchhiMgg==}
++
++  '@types/aria-query@5.0.4':
++    resolution: {integrity: sha512-rfT93uj5s0PRL7EzccGMs3brplhcrghnDoV26NqKhCAS1hVo+WdNsPvE/yb6ilfr5hi2MEk6d5EWJTKdxg8jVw==}
++
++  '@types/chai@5.2.3':
++    resolution: {integrity: sha512-Mw558oeA9fFbv65/y4mHtXDs9bPnFMZAL/jxdPFUpOHHIXX91mcgEHbS5Lahr+pwZFR8A7GQleRWeI6cGFC2UA==}
++
++  '@types/deep-eql@4.0.2':
++    resolution: {integrity: sha512-c9h9dVVMigMPc4bwTvC5dxqtqJZwQPePsWjPlpSOnojbor6pGqdk541lfA7AqFQr5pB1BRdq0juY9db81BwyFw==}
++
++  '@types/estree@1.0.9':
++    resolution: {integrity: sha512-GhdPgy1el4/ImP05X05Uw4cw2/M93BCUmnEvWZNStlCzEKME4Fkk+YpoA5OiHNQmoS7Cafb8Xa3Pya8m1Qrzeg==}
++
++  '@types/json-schema@7.0.15':
++    resolution: {integrity: sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA==}
++
++  '@types/node@22.19.19':
++    resolution: {integrity: sha512-dyh/xO2Fh5bYrfWaaqGrRQQGkNdmYw6AmaAUvYeUMNTWQtvb796ikLdmTchRmOlOiIJ1TDXfWgVx1QkUlQ6Hew==}
++
++  '@types/react-dom@19.2.3':
++    resolution: {integrity: sha512-jp2L/eY6fn+KgVVQAOqYItbF0VY/YApe5Mz2F0aykSO8gx31bYCZyvSeYxCHKvzHG5eZjc+zyaS5BrBWya2+kQ==}
++    peerDependencies:
++      '@types/react': ^19.2.0
++
++  '@types/react@19.2.14':
++    resolution: {integrity: sha512-ilcTH/UniCkMdtexkoCN0bI7pMcJDvmQFPvuPvmEaYA/NSfFTAgdUSLAoVjaRJm7+6PvcM+q1zYOwS4wTYMF9w==}
++
++  '@vitejs/plugin-react@6.0.2':
++    resolution: {integrity: sha512-DlSMqo4WhThw4vB8Mpn0Woe9J+Jfq1geJ61AKW0QEgLzGMNwtIMdxbDUzLxcun8W7NbJO0e2Jg/Nxm3cCSVzzg==}
++    engines: {node: ^20.19.0 || >=22.12.0}
++    peerDependencies:
++      '@rolldown/plugin-babel': ^0.1.7 || ^0.2.0
++      babel-plugin-react-compiler: ^1.0.0
++      vite: ^8.0.0
++    peerDependenciesMeta:
++      '@rolldown/plugin-babel':
++        optional: true
++      babel-plugin-react-compiler:
++        optional: true
++
++  '@vitest/expect@4.1.6':
++    resolution: {integrity: sha512-7EHDquPthALSV0jhhjgEW8FXaviMx7rSqu8W6oqCoAuOhKov814P99QDV1pxMA3QPv21YudvJngIhjrNI4opLg==}
++
++  '@vitest/mocker@4.1.6':
++    resolution: {integrity: sha512-MCFc63czMjEInOlcY2cpQCvCN+KgbAn+60xu9cMgP4sKaLC5JNAKw7JH8QdAnoAC88hW1IiSNZ+GgVXlN1UcMQ==}
++    peerDependencies:
++      msw: ^2.4.9
++      vite: ^6.0.0 || ^7.0.0 || ^8.0.0
++    peerDependenciesMeta:
++      msw:
++        optional: true
++      vite:
++        optional: true
++
++  '@vitest/pretty-format@4.1.6':
++    resolution: {integrity: sha512-h5SxD/IzNhZYnrSZRsUZQIC+vD0GY8cUvq0iwsmkFKixRCKLLWqCXa/FIQ4S1R+sI+PGoojkHsdNrbZiM9Qpgw==}
++
++  '@vitest/runner@4.1.6':
++    resolution: {integrity: sha512-nOPCmn2+yD0ZNmKdsXGv/UxMMWbMuKeD6GyYncNwdkYDxpQvrPSKYj2rWuDjC2Y4b6w6hjip5dBKFzEUuZe3vA==}
++
++  '@vitest/snapshot@4.1.6':
++    resolution: {integrity: sha512-YhsdE6xAVfTDmzjxL2ZDUvjj+ZsgyOKe+TdQzqkD72wIOmHka8NuGQ6NpTNZv9D2Z63fbwWKJPeVpEw4EQgYxw==}
++
++  '@vitest/spy@4.1.6':
++    resolution: {integrity: sha512-JFKxMx6udhwKh/Ldo270e17QX710vgunMkuPAvXjHSvC6oqLWAHhVhjg/I71q0u0CBSErIODV1Kjv0FQNSWjdg==}
++
++  '@vitest/utils@4.1.6':
++    resolution: {integrity: sha512-FxIY+U81R3LGKCxaHHFRQ5+g6/iRgGLmeHWdp2Amj4ljQRrEIWHmZyDfDYBRZlpyqA7qKxtS9DD1dhk8RnRIVQ==}
++
++  acorn-jsx@5.3.2:
++    resolution: {integrity: sha512-rq9s+JNhf0IChjtDXxllJ7g41oZk5SlXtp0LHwyA5cejwn7vKmKp4pPri6YEePv2PU65sAsegbXtIinmDFDXgQ==}
++    peerDependencies:
++      acorn: ^6.0.0 || ^7.0.0 || ^8.0.0
++
++  acorn@8.16.0:
++    resolution: {integrity: sha512-UVJyE9MttOsBQIDKw1skb9nAwQuR5wuGD3+82K6JgJlm/Y+KI92oNsMNGZCYdDsVtRHSak0pcV5Dno5+4jh9sw==}
++    engines: {node: '>=0.4.0'}
++    hasBin: true
++
++  ajv@6.15.0:
++    resolution: {integrity: sha512-fgFx7Hfoq60ytK2c7DhnF8jIvzYgOMxfugjLOSMHjLIPgenqa7S7oaagATUq99mV6IYvN2tRmC0wnTYX6iPbMw==}
++
++  ansi-regex@5.0.1:
++    resolution: {integrity: sha512-quJQXlTSUGL2LH9SUXo8VwsY4soanhgo6LNSm84E1LBcE8s3O0wpdiRzyR9z/ZZJMlMWv37qOOb9pdJlMUEKFQ==}
++    engines: {node: '>=8'}
++
++  ansi-styles@4.3.0:
++    resolution: {integrity: sha512-zbB9rCJAT1rbjiVDb2hqKFHNYLxgtk8NURxZ3IZwD3F6NtxbXZQCnnSi1Lkx+IDohdPlFp222wVALIheZJQSEg==}
++    engines: {node: '>=8'}
++
++  ansi-styles@5.2.0:
++    resolution: {integrity: sha512-Cxwpt2SfTzTtXcfOlzGEee8O+c+MmUgGrNiBcXnuWxuFJHe6a5Hz7qwhwe5OgaSYI0IJvkLqWX1ASG+cJOkEiA==}
++    engines: {node: '>=10'}
++
++  argparse@2.0.1:
++    resolution: {integrity: sha512-8+9WqebbFzpX9OR+Wa6O29asIogeRMzcGtAINdpMHHyAg10f05aSFVBbcEqGf/PXw1EjAZ+q2/bEBg3DvurK3Q==}
++
++  aria-query@5.3.0:
++    resolution: {integrity: sha512-b0P0sZPKtyu8HkeRAfCq0IfURZK+SuwMjY1UXGBU27wpAiTwQAIlq56IbIO+ytk/JjS1fMR14ee5WBBfKi5J6A==}
++
++  aria-query@5.3.2:
++    resolution: {integrity: sha512-COROpnaoap1E2F000S62r6A60uHZnmlvomhfyT2DlTcrY1OrBKn2UhH7qn5wTC9zMvD0AY7csdPSNwKP+7WiQw==}
++    engines: {node: '>= 0.4'}
++
++  assertion-error@2.0.1:
++    resolution: {integrity: sha512-Izi8RQcffqCeNVgFigKli1ssklIbpHnCYc6AknXGYoB6grJqyeby7jv12JUQgmTAnIDnbck1uxksT4dzN3PWBA==}
++    engines: {node: '>=12'}
++
++  balanced-match@1.0.2:
++    resolution: {integrity: sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==}
++
++  bidi-js@1.0.3:
++    resolution: {integrity: sha512-RKshQI1R3YQ+n9YJz2QQ147P66ELpa1FQEg20Dk8oW9t2KgLbpDLLp9aGZ7y8WHSshDknG0bknqGw5/tyCs5tw==}
++
++  brace-expansion@1.1.14:
++    resolution: {integrity: sha512-MWPGfDxnyzKU7rNOW9SP/c50vi3xrmrua/+6hfPbCS2ABNWfx24vPidzvC7krjU/RTo235sV776ymlsMtGKj8g==}
++
++  callsites@3.1.0:
++    resolution: {integrity: sha512-P8BjAsXvZS+VIDUI11hHCQEv74YT67YUi5JJFNWIqL235sBmjX4+qx9Muvls5ivyNENctx46xQLQ3aTuE7ssaQ==}
++    engines: {node: '>=6'}
++
++  chai@6.2.2:
++    resolution: {integrity: sha512-NUPRluOfOiTKBKvWPtSD4PhFvWCqOi0BGStNWs57X9js7XGTprSmFoz5F0tWhR4WPjNeR9jXqdC7/UpSJTnlRg==}
++    engines: {node: '>=18'}
++
++  chalk@4.1.2:
++    resolution: {integrity: sha512-oKnbhFyRIXpUuez8iBMmyEa4nbj4IOQyuhc/wy9kY7/WVPcwIO9VA668Pu8RkO7+0G76SLROeyw9CpQ061i4mA==}
++    engines: {node: '>=10'}
++
++  color-convert@2.0.1:
++    resolution: {integrity: sha512-RRECPsj7iu/xb5oKYcsFHSppFNnsj/52OVTRKb4zP5onXwVF3zVmmToNcOfGC+CRDpfK/U584fMg38ZHCaElKQ==}
++    engines: {node: '>=7.0.0'}
++
++  color-name@1.1.4:
++    resolution: {integrity: sha512-dOy+3AuW3a2wNbZHIuMZpTcgjGuLU/uBL/ubcZF9OXbDo8ff4O8yVp5Bf0efS8uEoYo5q4Fx7dY9OgQGXgAsQA==}
++
++  concat-map@0.0.1:
++    resolution: {integrity: sha512-/Srv4dswyQNBfohGpz9o6Yb3Gz3SrUDqBH5rTuhGR7ahtlbYKnVxw2bCFMRljaA7EXHaXZ8wsHdodFvbkhKmqg==}
++
++  convert-source-map@2.0.0:
++    resolution: {integrity: sha512-Kvp459HrV2FEJ1CAsi1Ku+MY3kasH19TFykTz2xWmMeq6bk2NU3XXvfJ+Q61m0xktWwt+1HSYf3JZsTms3aRJg==}
++
++  cross-spawn@7.0.6:
++    resolution: {integrity: sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA==}
++    engines: {node: '>= 8'}
++
++  css-tree@3.2.1:
++    resolution: {integrity: sha512-X7sjQzceUhu1u7Y/ylrRZFU2FS6LRiFVp6rKLPg23y3x3c3DOKAwuXGDp+PAGjh6CSnCjYeAul8pcT8bAl+lSA==}
++    engines: {node: ^10 || ^12.20.0 || ^14.13.0 || >=15.0.0}
++
++  css.escape@1.5.1:
++    resolution: {integrity: sha512-YUifsXXuknHlUsmlgyY0PKzgPOr7/FjCePfHNt0jxm83wHZi44VDMQ7/fGNkjY3/jV1MC+1CmZbaHzugyeRtpg==}
++
++  csstype@3.2.3:
++    resolution: {integrity: sha512-z1HGKcYy2xA8AGQfwrn0PAy+PB7X/GSj3UVJW9qKyn43xWa+gl5nXmU4qqLMRzWVLFC8KusUX8T/0kCiOYpAIQ==}
++
++  data-urls@7.0.0:
++    resolution: {integrity: sha512-23XHcCF+coGYevirZceTVD7NdJOqVn+49IHyxgszm+JIiHLoB2TkmPtsYkNWT1pvRSGkc35L6NHs0yHkN2SumA==}
++    engines: {node: ^20.19.0 || ^22.12.0 || >=24.0.0}
++
++  debug@4.4.3:
++    resolution: {integrity: sha512-RGwwWnwQvkVfavKVt22FGLw+xYSdzARwm0ru6DhTVA3umU5hZc28V3kO4stgYryrTlLpuvgI9GiijltAjNbcqA==}
++    engines: {node: '>=6.0'}
++    peerDependencies:
++      supports-color: '*'
++    peerDependenciesMeta:
++      supports-color:
++        optional: true
++
++  decimal.js@10.6.0:
++    resolution: {integrity: sha512-YpgQiITW3JXGntzdUmyUR1V812Hn8T1YVXhCu+wO3OpS4eU9l4YdD3qjyiKdV6mvV29zapkMeD390UVEf2lkUg==}
++
++  deep-is@0.1.4:
++    resolution: {integrity: sha512-oIPzksmTg4/MriiaYGO+okXDT7ztn/w3Eptv/+gSIdMdKsJo0u4CfYNFJPy+4SKMuCqGw2wxnA+URMg3t8a/bQ==}
++
++  dequal@2.0.3:
++    resolution: {integrity: sha512-0je+qPKHEMohvfRTCEo3CrPG6cAzAYgmzKyxRiYSSDkS6eGJdyVJm7WaYA5ECaAD9wLB2T4EEeymA5aFVcYXCA==}
++    engines: {node: '>=6'}
++
++  detect-libc@2.1.2:
++    resolution: {integrity: sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ==}
++    engines: {node: '>=8'}
++
++  dom-accessibility-api@0.5.16:
++    resolution: {integrity: sha512-X7BJ2yElsnOJ30pZF4uIIDfBEVgF4XEBxL9Bxhy6dnrm5hkzqmsWHGTiHqRiITNhMyFLyAiWndIJP7Z1NTteDg==}
++
++  dom-accessibility-api@0.6.3:
++    resolution: {integrity: sha512-7ZgogeTnjuHbo+ct10G9Ffp0mif17idi0IyWNVA/wcwcm7NPOD/WEHVP3n7n3MhXqxoIYm8d6MuZohYWIZ4T3w==}
++
++  enhanced-resolve@5.21.4:
++    resolution: {integrity: sha512-wE4fDO8OjJhrPFH69HUQStq5oKvGRTNXEyW+k5C/pUQLASSsTu7obd2V3GvCDgPcY9AWjhJ4jz9Kh7iRvrxhJg==}
++    engines: {node: '>=10.13.0'}
++
++  entities@8.0.0:
++    resolution: {integrity: sha512-zwfzJecQ/Uej6tusMqwAqU/6KL2XaB2VZ2Jg54Je6ahNBGNH6Ek6g3jjNCF0fG9EWQKGZNddNjU5F1ZQn/sBnA==}
++    engines: {node: '>=20.19.0'}
++
++  es-module-lexer@2.1.0:
++    resolution: {integrity: sha512-n27zTYMjYu1aj4MjCWzSP7G9r75utsaoc8m61weK+W8JMBGGQybd43GstCXZ3WNmSFtGT9wi59qQTW6mhTR5LQ==}
++
++  escape-string-regexp@4.0.0:
++    resolution: {integrity: sha512-TtpcNJ3XAzx3Gq8sWRzJaVajRs0uVxA2YAkdb1jm2YkPz4G6egUFAyA3n5vtEIZefPk5Wa4UXbKuS5fKkJWdgA==}
++    engines: {node: '>=10'}
++
++  eslint-scope@8.4.0:
++    resolution: {integrity: sha512-sNXOfKCn74rt8RICKMvJS7XKV/Xk9kA7DyJr8mJik3S7Cwgy3qlkkmyS2uQB3jiJg6VNdZd/pDBJu0nvG2NlTg==}
++    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
++
++  eslint-visitor-keys@3.4.3:
++    resolution: {integrity: sha512-wpc+LXeiyiisxPlEkUzU6svyS1frIO3Mgxj1fdy7Pm8Ygzguax2N3Fa/D/ag1WqbOprdI+uY6wMUl8/a2G+iag==}
++    engines: {node: ^12.22.0 || ^14.17.0 || >=16.0.0}
++
++  eslint-visitor-keys@4.2.1:
++    resolution: {integrity: sha512-Uhdk5sfqcee/9H/rCOJikYz67o0a2Tw2hGRPOG2Y1R2dg7brRe1uG0yaNQDHu+TO/uQPF/5eCapvYSmHUjt7JQ==}
++    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
++
++  eslint@9.39.4:
++    resolution: {integrity: sha512-XoMjdBOwe/esVgEvLmNsD3IRHkm7fbKIUGvrleloJXUZgDHig2IPWNniv+GwjyJXzuNqVjlr5+4yVUZjycJwfQ==}
++    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
++    hasBin: true
++    peerDependencies:
++      jiti: '*'
++    peerDependenciesMeta:
++      jiti:
++        optional: true
++
++  espree@10.4.0:
++    resolution: {integrity: sha512-j6PAQ2uUr79PZhBjP5C5fhl8e39FmRnOjsD5lGnWrFU8i2G776tBK7+nP8KuQUTTyAZUwfQqXAgrVH5MbH9CYQ==}
++    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
++
++  esquery@1.7.0:
++    resolution: {integrity: sha512-Ap6G0WQwcU/LHsvLwON1fAQX9Zp0A2Y6Y/cJBl9r/JbW90Zyg4/zbG6zzKa2OTALELarYHmKu0GhpM5EO+7T0g==}
++    engines: {node: '>=0.10'}
++
++  esrecurse@4.3.0:
++    resolution: {integrity: sha512-KmfKL3b6G+RXvP8N1vr3Tq1kL/oCFgn2NYXEtqP8/L3pKapUA4G8cFVaoF3SU323CD4XypR/ffioHmkti6/Tag==}
++    engines: {node: '>=4.0'}
++
++  estraverse@5.3.0:
++    resolution: {integrity: sha512-MMdARuVEQziNTeJD8DgMqmhwR11BRQ/cBP+pLtYdSTnf3MIO8fFeiINEbX36ZdNlfU/7A9f3gUw49B3oQsvwBA==}
++    engines: {node: '>=4.0'}
++
++  estree-walker@3.0.3:
++    resolution: {integrity: sha512-7RUKfXgSMMkzt6ZuXmqapOurLGPPfgj6l9uRZ7lRGolvk0y2yocc35LdcxKC5PQZdn2DMqioAQ2NoWcrTKmm6g==}
++
++  esutils@2.0.3:
++    resolution: {integrity: sha512-kVscqXk4OCp68SZ0dkgEKVi6/8ij300KBWTJq32P/dYeWTSwK41WyTxalN1eRmA5Z9UU/LX9D7FWSmV9SAYx6g==}
++    engines: {node: '>=0.10.0'}
++
++  expect-type@1.3.0:
++    resolution: {integrity: sha512-knvyeauYhqjOYvQ66MznSMs83wmHrCycNEN6Ao+2AeYEfxUIkuiVxdEa1qlGEPK+We3n0THiDciYSsCcgW/DoA==}
++    engines: {node: '>=12.0.0'}
++
++  fast-deep-equal@3.1.3:
++    resolution: {integrity: sha512-f3qQ9oQy9j2AhBe/H9VC91wLmKBCCU/gDOnKNAYG5hswO7BLKj09Hc5HYNz9cGI++xlpDCIgDaitVs03ATR84Q==}
++
++  fast-json-stable-stringify@2.1.0:
++    resolution: {integrity: sha512-lhd/wF+Lk98HZoTCtlVraHtfh5XYijIjalXck7saUtuanSDyLMxnHhSXEDJqHxD7msR8D0uCmqlkwjCV8xvwHw==}
++
++  fast-levenshtein@2.0.6:
++    resolution: {integrity: sha512-DCXu6Ifhqcks7TZKY3Hxp3y6qphY5SJZmrWMDrKcERSOXWQdMhU9Ig/PYrzyw/ul9jOIyh0N4M0tbC5hodg8dw==}
++
++  fdir@6.5.0:
++    resolution: {integrity: sha512-tIbYtZbucOs0BRGqPJkshJUYdL+SDH7dVM8gjy+ERp3WAUjLEFJE+02kanyHtwjWOnwrKYBiwAmM0p4kLJAnXg==}
++    engines: {node: '>=12.0.0'}
++    peerDependencies:
++      picomatch: ^3 || ^4
++    peerDependenciesMeta:
++      picomatch:
++        optional: true
++
++  file-entry-cache@8.0.0:
++    resolution: {integrity: sha512-XXTUwCvisa5oacNGRP9SfNtYBNAMi+RPwBFmblZEF7N7swHYQS6/Zfk7SRwx4D5j3CH211YNRco1DEMNVfZCnQ==}
++    engines: {node: '>=16.0.0'}
++
++  find-up@5.0.0:
++    resolution: {integrity: sha512-78/PXT1wlLLDgTzDs7sjq9hzz0vXD+zn+7wypEe4fXQxCmdmqfGsEPQxmiCSQI3ajFV91bVSsvNtrJRiW6nGng==}
++    engines: {node: '>=10'}
++
++  flat-cache@4.0.1:
++    resolution: {integrity: sha512-f7ccFPK3SXFHpx15UIGyRJ/FJQctuKZ0zVuN3frBo4HnK3cay9VEW0R6yPYFHC0AgqhukPzKjq22t5DmAyqGyw==}
++    engines: {node: '>=16'}
++
++  flatted@3.4.2:
++    resolution: {integrity: sha512-PjDse7RzhcPkIJwy5t7KPWQSZ9cAbzQXcafsetQoD7sOJRQlGikNbx7yZp2OotDnJyrDcbyRq3Ttb18iYOqkxA==}
++
++  fsevents@2.3.3:
++    resolution: {integrity: sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==}
++    engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
++    os: [darwin]
++
++  glob-parent@6.0.2:
++    resolution: {integrity: sha512-XxwI8EOhVQgWp6iDL+3b0r86f4d6AX6zSU55HfB4ydCEuXLXc5FcYeOu+nnGftS4TEju/11rt4KJPTMgbfmv4A==}
++    engines: {node: '>=10.13.0'}
++
++  globals@14.0.0:
++    resolution: {integrity: sha512-oahGvuMGQlPw/ivIYBjVSrWAfWLBeku5tpPE2fOPLi+WHffIWbuh2tCjhyQhTBPMf5E9jDEH4FOmTYgYwbKwtQ==}
++    engines: {node: '>=18'}
++
++  graceful-fs@4.2.11:
++    resolution: {integrity: sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ==}
++
++  has-flag@4.0.0:
++    resolution: {integrity: sha512-EykJT/Q1KjTWctppgIAgfSO0tKVuZUjhgMr17kqTumMl6Afv3EISleU7qZUzoXDFTAHTDC4NOoG/ZxU3EvlMPQ==}
++    engines: {node: '>=8'}
++
++  html-encoding-sniffer@6.0.0:
++    resolution: {integrity: sha512-CV9TW3Y3f8/wT0BRFc1/KAVQ3TUHiXmaAb6VW9vtiMFf7SLoMd1PdAc4W3KFOFETBJUb90KatHqlsZMWV+R9Gg==}
++    engines: {node: ^20.19.0 || ^22.12.0 || >=24.0.0}
++
++  ignore@5.3.2:
++    resolution: {integrity: sha512-hsBTNUqQTDwkWtcdYI2i06Y/nUBEsNEDJKjWdigLvegy8kDuJAS8uRlpkkcQpyEXL0Z/pjDy5HBmMjRCJ2gq+g==}
++    engines: {node: '>= 4'}
++
++  import-fresh@3.3.1:
++    resolution: {integrity: sha512-TR3KfrTZTYLPB6jUjfx6MF9WcWrHL9su5TObK4ZkYgBdWKPOFoSoQIdEuTuR82pmtxH2spWG9h6etwfr1pLBqQ==}
++    engines: {node: '>=6'}
++
++  imurmurhash@0.1.4:
++    resolution: {integrity: sha512-JmXMZ6wuvDmLiHEml9ykzqO6lwFbof0GG4IkcGaENdCRDDmMVnny7s5HsIgHCbaq0w2MyPhDqkhTUgS2LU2PHA==}
++    engines: {node: '>=0.8.19'}
++
++  indent-string@4.0.0:
++    resolution: {integrity: sha512-EdDDZu4A2OyIK7Lr/2zG+w5jmbuk1DVBnEwREQvBzspBJkCEbRa8GxU1lghYcaGJCnRWibjDXlq779X1/y5xwg==}
++    engines: {node: '>=8'}
++
++  is-extglob@2.1.1:
++    resolution: {integrity: sha512-SbKbANkN603Vi4jEZv49LeVJMn4yGwsbzZworEoyEiutsN3nJYdbO36zfhGJ6QEDpOZIFkDtnq5JRxmvl3jsoQ==}
++    engines: {node: '>=0.10.0'}
++
++  is-glob@4.0.3:
++    resolution: {integrity: sha512-xelSayHH36ZgE7ZWhli7pW34hNbNl8Ojv5KVmkJD4hBdD3th8Tfk9vYasLM+mXWOZhFkgZfxhLSnrwRr4elSSg==}
++    engines: {node: '>=0.10.0'}
++
++  is-potential-custom-element-name@1.0.1:
++    resolution: {integrity: sha512-bCYeRA2rVibKZd+s2625gGnGF/t7DSqDs4dP7CrLA1m7jKWz6pps0LpYLJN8Q64HtmPKJ1hrN3nzPNKFEKOUiQ==}
++
++  isexe@2.0.0:
++    resolution: {integrity: sha512-RHxMLp9lnKHGHRng9QFhRCMbYAcVpn69smSGcq3f36xjgVVWThj4qqLbTLlq7Ssj8B+fIQ1EuCEGI2lKsyQeIw==}
++
++  jiti@2.7.0:
++    resolution: {integrity: sha512-AC/7JofJvZGrrneWNaEnJeOLUx+JlGt7tNa0wZiRPT4MY1wmfKjt2+6O2p2uz2+skll8OZZmJMNqeke7kKbNgQ==}
++    hasBin: true
++
++  js-tokens@4.0.0:
++    resolution: {integrity: sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==}
++
++  js-yaml@4.1.1:
++    resolution: {integrity: sha512-qQKT4zQxXl8lLwBtHMWwaTcGfFOZviOJet3Oy/xmGk2gZH677CJM9EvtfdSkgWcATZhj/55JZ0rmy3myCT5lsA==}
++    hasBin: true
++
++  jsdom@29.1.1:
++    resolution: {integrity: sha512-ECi4Fi2f7BdJtUKTflYRTiaMxIB0O6zfR1fX0GXpUrf6flp8QIYn1UT20YQqdSOfk2dfkCwS8LAFoJDEppNK5Q==}
++    engines: {node: ^20.19.0 || ^22.13.0 || >=24.0.0}
++    peerDependencies:
++      canvas: ^3.0.0
++    peerDependenciesMeta:
++      canvas:
++        optional: true
++
++  json-buffer@3.0.1:
++    resolution: {integrity: sha512-4bV5BfR2mqfQTJm+V5tPPdf+ZpuhiIvTuAB5g8kcrXOZpTT/QwwVRWBywX1ozr6lEuPdbHxwaJlm9G6mI2sfSQ==}
++
++  json-schema-traverse@0.4.1:
++    resolution: {integrity: sha512-xbbCH5dCYU5T8LcEhhuh7HJ88HXuW3qsI3Y0zOZFKfZEHcpWiHU/Jxzk629Brsab/mMiHQti9wMP+845RPe3Vg==}
++
++  json-stable-stringify-without-jsonify@1.0.1:
++    resolution: {integrity: sha512-Bdboy+l7tA3OGW6FjyFHWkP5LuByj1Tk33Ljyq0axyzdk9//JSi2u3fP1QSmd1KNwq6VOKYGlAu87CisVir6Pw==}
++
++  keyv@4.5.4:
++    resolution: {integrity: sha512-oxVHkHR/EJf2CNXnWxRLW6mg7JyCCUcG0DtEGmL2ctUo1PNTin1PUil+r/+4r5MpVgC/fn1kjsx7mjSujKqIpw==}
++
++  levn@0.4.1:
++    resolution: {integrity: sha512-+bT2uH4E5LGE7h/n3evcS/sQlJXCpIp6ym8OWJ5eV6+67Dsql/LaaT7qJBAt2rzfoa/5QBGBhxDix1dMt2kQKQ==}
++    engines: {node: '>= 0.8.0'}
++
++  lightningcss-android-arm64@1.32.0:
++    resolution: {integrity: sha512-YK7/ClTt4kAK0vo6w3X+Pnm0D2cf2vPHbhOXdoNti1Ga0al1P4TBZhwjATvjNwLEBCnKvjJc2jQgHXH0NEwlAg==}
++    engines: {node: '>= 12.0.0'}
++    cpu: [arm64]
++    os: [android]
++
++  lightningcss-darwin-arm64@1.32.0:
++    resolution: {integrity: sha512-RzeG9Ju5bag2Bv1/lwlVJvBE3q6TtXskdZLLCyfg5pt+HLz9BqlICO7LZM7VHNTTn/5PRhHFBSjk5lc4cmscPQ==}
++    engines: {node: '>= 12.0.0'}
++    cpu: [arm64]
++    os: [darwin]
++
++  lightningcss-darwin-x64@1.32.0:
++    resolution: {integrity: sha512-U+QsBp2m/s2wqpUYT/6wnlagdZbtZdndSmut/NJqlCcMLTWp5muCrID+K5UJ6jqD2BFshejCYXniPDbNh73V8w==}
++    engines: {node: '>= 12.0.0'}
++    cpu: [x64]
++    os: [darwin]
++
++  lightningcss-freebsd-x64@1.32.0:
++    resolution: {integrity: sha512-JCTigedEksZk3tHTTthnMdVfGf61Fky8Ji2E4YjUTEQX14xiy/lTzXnu1vwiZe3bYe0q+SpsSH/CTeDXK6WHig==}
++    engines: {node: '>= 12.0.0'}
++    cpu: [x64]
++    os: [freebsd]
++
++  lightningcss-linux-arm-gnueabihf@1.32.0:
++    resolution: {integrity: sha512-x6rnnpRa2GL0zQOkt6rts3YDPzduLpWvwAF6EMhXFVZXD4tPrBkEFqzGowzCsIWsPjqSK+tyNEODUBXeeVHSkw==}
++    engines: {node: '>= 12.0.0'}
++    cpu: [arm]
++    os: [linux]
++
++  lightningcss-linux-arm64-gnu@1.32.0:
++    resolution: {integrity: sha512-0nnMyoyOLRJXfbMOilaSRcLH3Jw5z9HDNGfT/gwCPgaDjnx0i8w7vBzFLFR1f6CMLKF8gVbebmkUN3fa/kQJpQ==}
++    engines: {node: '>= 12.0.0'}
++    cpu: [arm64]
++    os: [linux]
++    libc: [glibc]
++
++  lightningcss-linux-arm64-musl@1.32.0:
++    resolution: {integrity: sha512-UpQkoenr4UJEzgVIYpI80lDFvRmPVg6oqboNHfoH4CQIfNA+HOrZ7Mo7KZP02dC6LjghPQJeBsvXhJod/wnIBg==}
++    engines: {node: '>= 12.0.0'}
++    cpu: [arm64]
++    os: [linux]
++    libc: [musl]
++
++  lightningcss-linux-x64-gnu@1.32.0:
++    resolution: {integrity: sha512-V7Qr52IhZmdKPVr+Vtw8o+WLsQJYCTd8loIfpDaMRWGUZfBOYEJeyJIkqGIDMZPwPx24pUMfwSxxI8phr/MbOA==}
++    engines: {node: '>= 12.0.0'}
++    cpu: [x64]
++    os: [linux]
++    libc: [glibc]
++
++  lightningcss-linux-x64-musl@1.32.0:
++    resolution: {integrity: sha512-bYcLp+Vb0awsiXg/80uCRezCYHNg1/l3mt0gzHnWV9XP1W5sKa5/TCdGWaR/zBM2PeF/HbsQv/j2URNOiVuxWg==}
++    engines: {node: '>= 12.0.0'}
++    cpu: [x64]
++    os: [linux]
++    libc: [musl]
++
++  lightningcss-win32-arm64-msvc@1.32.0:
++    resolution: {integrity: sha512-8SbC8BR40pS6baCM8sbtYDSwEVQd4JlFTOlaD3gWGHfThTcABnNDBda6eTZeqbofalIJhFx0qKzgHJmcPTnGdw==}
++    engines: {node: '>= 12.0.0'}
++    cpu: [arm64]
++    os: [win32]
++
++  lightningcss-win32-x64-msvc@1.32.0:
++    resolution: {integrity: sha512-Amq9B/SoZYdDi1kFrojnoqPLxYhQ4Wo5XiL8EVJrVsB8ARoC1PWW6VGtT0WKCemjy8aC+louJnjS7U18x3b06Q==}
++    engines: {node: '>= 12.0.0'}
++    cpu: [x64]
++    os: [win32]
++
++  lightningcss@1.32.0:
++    resolution: {integrity: sha512-NXYBzinNrblfraPGyrbPoD19C1h9lfI/1mzgWYvXUTe414Gz/X1FD2XBZSZM7rRTrMA8JL3OtAaGifrIKhQ5yQ==}
++    engines: {node: '>= 12.0.0'}
++
++  locate-path@6.0.0:
++    resolution: {integrity: sha512-iPZK6eYjbxRu3uB4/WZ3EsEIMJFMqAoopl3R+zuq0UjcAm/MO6KCweDgPfP3elTztoKP3KtnVHxTn2NHBSDVUw==}
++    engines: {node: '>=10'}
++
++  lodash.merge@4.6.2:
++    resolution: {integrity: sha512-0KpjqXRVvrYyCsX1swR/XTK0va6VQkQM6MNo7PqW77ByjAhoARA8EfrP1N4+KlKj8YS0ZUCtRT/YUuhyYDujIQ==}
++
++  lru-cache@11.4.0:
++    resolution: {integrity: sha512-W+R+kFL4HgVxONq2bhXPi3bGpzGe/yEhVOp233qw9wCRtgncJ15P3bC+e4zZMu4Cq7d+WAJjXGW0uUkifhcatA==}
++    engines: {node: 20 || >=22}
++
++  lucide-react@1.16.0:
++    resolution: {integrity: sha512-dYwyPzb4MEKpGUmNYk3WKWPnMrHs3FKM+q94kAnJrcDIqqn1hq2xY8scaS2ovsOCM5D51ey2gaRG3PBb1vgoYQ==}
++    peerDependencies:
++      react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
++
++  lz-string@1.5.0:
++    resolution: {integrity: sha512-h5bgJWpxJNswbU7qCrV0tIKQCaS3blPDrqKWx+QxzuzL1zGUzij9XCWLrSLsJPu5t+eWA/ycetzYAO5IOMcWAQ==}
++    hasBin: true
++
++  magic-string@0.30.21:
++    resolution: {integrity: sha512-vd2F4YUyEXKGcLHoq+TEyCjxueSeHnFxyyjNp80yg0XV4vUhnDer/lvvlqM/arB5bXQN5K2/3oinyCRyx8T2CQ==}
++
++  mdn-data@2.27.1:
++    resolution: {integrity: sha512-9Yubnt3e8A0OKwxYSXyhLymGW4sCufcLG6VdiDdUGVkPhpqLxlvP5vl1983gQjJl3tqbrM731mjaZaP68AgosQ==}
++
++  min-indent@1.0.1:
++    resolution: {integrity: sha512-I9jwMn07Sy/IwOj3zVkVik2JTvgpaykDZEigL6Rx6N9LbMywwUSMtxET+7lVoDLLd3O3IXwJwvuuns8UB/HeAg==}
++    engines: {node: '>=4'}
++
++  minimatch@3.1.5:
++    resolution: {integrity: sha512-VgjWUsnnT6n+NUk6eZq77zeFdpW2LWDzP6zFGrCbHXiYNul5Dzqk2HHQ5uFH2DNW5Xbp8+jVzaeNt94ssEEl4w==}
++
++  ms@2.1.3:
++    resolution: {integrity: sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==}
++
++  nanoid@3.3.12:
++    resolution: {integrity: sha512-ZB9RH/39qpq5Vu6Y+NmUaFhQR6pp+M2Xt76XBnEwDaGcVAqhlvxrl3B2bKS5D3NH3QR76v3aSrKaF/Kiy7lEtQ==}
++    engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
++    hasBin: true
++
++  natural-compare@1.4.0:
++    resolution: {integrity: sha512-OWND8ei3VtNC9h7V60qff3SVobHr996CTwgxubgyQYEpg290h9J0buyECNNJexkFm5sOajh5G116RYA1c8ZMSw==}
++
++  obug@2.1.1:
++    resolution: {integrity: sha512-uTqF9MuPraAQ+IsnPf366RG4cP9RtUi7MLO1N3KEc+wb0a6yKpeL0lmk2IB1jY5KHPAlTc6T/JRdC/YqxHNwkQ==}
++
++  optionator@0.9.4:
++    resolution: {integrity: sha512-6IpQ7mKUxRcZNLIObR0hz7lxsapSSIYNZJwXPGeF0mTVqGKFIXj1DQcMoT22S3ROcLyY/rz0PWaWZ9ayWmad9g==}
++    engines: {node: '>= 0.8.0'}
++
++  p-limit@3.1.0:
++    resolution: {integrity: sha512-TYOanM3wGwNGsZN2cVTYPArw454xnXj5qmWF1bEoAc4+cU/ol7GVh7odevjp1FNHduHc3KZMcFduxU5Xc6uJRQ==}
++    engines: {node: '>=10'}
++
++  p-locate@5.0.0:
++    resolution: {integrity: sha512-LaNjtRWUBY++zB5nE/NwcaoMylSPk+S+ZHNB1TzdbMJMny6dynpAGt7X/tl/QYq3TIeE6nxHppbo2LGymrG5Pw==}
++    engines: {node: '>=10'}
++
++  parent-module@1.0.1:
++    resolution: {integrity: sha512-GQ2EWRpQV8/o+Aw8YqtfZZPfNRWZYkbidE9k5rpl/hC3vtHHBfGm2Ifi6qWV+coDGkrUKZAxE3Lot5kcsRlh+g==}
++    engines: {node: '>=6'}
++
++  parse5@8.0.1:
++    resolution: {integrity: sha512-z1e/HMG90obSGeidlli3hj7cbocou0/wa5HacvI3ASx34PecNjNQeaHNo5WIZpWofN9kgkqV1q5YvXe3F0FoPw==}
++
++  path-exists@4.0.0:
++    resolution: {integrity: sha512-ak9Qy5Q7jYb2Wwcey5Fpvg2KoAc/ZIhLSLOSBmRmygPsGwkVVt0fZa0qrtMz+m6tJTAHfZQ8FnmB4MG4LWy7/w==}
++    engines: {node: '>=8'}
++
++  path-key@3.1.1:
++    resolution: {integrity: sha512-ojmeN0qd+y0jszEtoY48r0Peq5dwMEkIlCOu6Q5f41lfkswXuKtYrhgoTpLnyIcHm24Uhqx+5Tqm2InSwLhE6Q==}
++    engines: {node: '>=8'}
++
++  pathe@2.0.3:
++    resolution: {integrity: sha512-WUjGcAqP1gQacoQe+OBJsFA7Ld4DyXuUIjZ5cc75cLHvJ7dtNsTugphxIADwspS+AraAUePCKrSVtPLFj/F88w==}
++
++  picocolors@1.1.1:
++    resolution: {integrity: sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==}
++
++  picomatch@4.0.4:
++    resolution: {integrity: sha512-QP88BAKvMam/3NxH6vj2o21R6MjxZUAd6nlwAS/pnGvN9IVLocLHxGYIzFhg6fUQ+5th6P4dv4eW9jX3DSIj7A==}
++    engines: {node: '>=12'}
++
++  postcss@8.5.14:
++    resolution: {integrity: sha512-SoSL4+OSEtR99LHFZQiJLkT59C5B1amGO1NzTwj7TT1qCUgUO6hxOvzkOYxD+vMrXBM3XJIKzokoERdqQq/Zmg==}
++    engines: {node: ^10 || ^12 || >=14}
++
++  prelude-ls@1.2.1:
++    resolution: {integrity: sha512-vkcDPrRZo1QZLbn5RLGPpg/WmIQ65qoWWhcGKf/b5eplkkarX0m9z8ppCat4mlOqUsWpyNuYgO3VRyrYHSzX5g==}
++    engines: {node: '>= 0.8.0'}
++
++  pretty-format@27.5.1:
++    resolution: {integrity: sha512-Qb1gy5OrP5+zDf2Bvnzdl3jsTf1qXVMazbvCoKhtKqVs4/YK4ozX4gKQJJVyNe+cajNPn0KoC0MC3FUmaHWEmQ==}
++    engines: {node: ^10.13.0 || ^12.13.0 || ^14.15.0 || >=15.0.0}
++
++  punycode@2.3.1:
++    resolution: {integrity: sha512-vYt7UD1U9Wg6138shLtLOvdAu+8DsC/ilFtEVHcH+wydcSpNE20AfSOduf6MkRFahL5FY7X1oU7nKVZFtfq8Fg==}
++    engines: {node: '>=6'}
++
++  react-dom@19.2.6:
++    resolution: {integrity: sha512-0prMI+hvBbPjsWnxDLxlCGyM8PN6UuWjEUCYmZhO67xIV9Xasa/r/vDnq+Xyq4Lo27g8QSbO5YzARu0D1Sps3g==}
++    peerDependencies:
++      react: ^19.2.6
++
++  react-is@17.0.2:
++    resolution: {integrity: sha512-w2GsyukL62IJnlaff/nRegPQR94C/XXamvMWmSHRJ4y7Ts/4ocGRmTHvOs8PSE6pB3dWOrD/nueuU5sduBsQ4w==}
++
++  react@19.2.6:
++    resolution: {integrity: sha512-sfWGGfavi0xr8Pg0sVsyHMAOziVYKgPLNrS7ig+ivMNb3wbCBw3KxtflsGBAwD3gYQlE/AEZsTLgToRrSCjb0Q==}
++    engines: {node: '>=0.10.0'}
++
++  redent@3.0.0:
++    resolution: {integrity: sha512-6tDA8g98We0zd0GvVeMT9arEOnTw9qM03L9cJXaCjrip1OO764RDBLBfrB4cwzNGDj5OA5ioymC9GkizgWJDUg==}
++    engines: {node: '>=8'}
++
++  require-from-string@2.0.2:
++    resolution: {integrity: sha512-Xf0nWe6RseziFMu+Ap9biiUbmplq6S9/p+7w7YXP/JBHhrUDDUhwa+vANyubuqfZWTveU//DYVGsDG7RKL/vEw==}
++    engines: {node: '>=0.10.0'}
++
++  resolve-from@4.0.0:
++    resolution: {integrity: sha512-pb/MYmXstAkysRFx8piNI1tGFNQIFA3vkE3Gq4EuA1dF6gHp/+vgZqsCGJapvy8N3Q+4o7FwvquPJcnZ7RYy4g==}
++    engines: {node: '>=4'}
++
++  rolldown@1.0.1:
++    resolution: {integrity: sha512-X0KQHljNnEkWNqqiz9zJrGunh1B0HgOxLXvnFpCOcadzcy5qohZ3tqMEUg00vncoRovXuK3ZqCT9KnnKzoInFQ==}
++    engines: {node: ^20.19.0 || >=22.12.0}
++    hasBin: true
++
++  saxes@6.0.0:
++    resolution: {integrity: sha512-xAg7SOnEhrm5zI3puOOKyy1OMcMlIJZYNJY7xLBwSze0UjhPLnWfj2GF2EpT0jmzaJKIWKHLsaSSajf35bcYnA==}
++    engines: {node: '>=v12.22.7'}
++
++  scheduler@0.27.0:
++    resolution: {integrity: sha512-eNv+WrVbKu1f3vbYJT/xtiF5syA5HPIMtf9IgY/nKg0sWqzAUEvqY/xm7OcZc/qafLx/iO9FgOmeSAp4v5ti/Q==}
++
++  shebang-command@2.0.0:
++    resolution: {integrity: sha512-kHxr2zZpYtdmrN1qDjrrX/Z1rR1kG8Dx+gkpK1G4eXmvXswmcE1hTWBWYUzlraYw1/yZp6YuDY77YtvbN0dmDA==}
++    engines: {node: '>=8'}
++
++  shebang-regex@3.0.0:
++    resolution: {integrity: sha512-7++dFhtcx3353uBaq8DDR4NuxBetBzC7ZQOhmTQInHEd6bSrXdiEyzCvG07Z44UYdLShWUyXt5M/yhz8ekcb1A==}
++    engines: {node: '>=8'}
++
++  siginfo@2.0.0:
++    resolution: {integrity: sha512-ybx0WO1/8bSBLEWXZvEd7gMW3Sn3JFlW3TvX1nREbDLRNQNaeNN8WK0meBwPdAaOI7TtRRRJn/Es1zhrrCHu7g==}
++
++  source-map-js@1.2.1:
++    resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
++    engines: {node: '>=0.10.0'}
++
++  stackback@0.0.2:
++    resolution: {integrity: sha512-1XMJE5fQo1jGH6Y/7ebnwPOBEkIEnT4QF32d5R1+VXdXveM0IBMJt8zfaxX1P3QhVwrYe+576+jkANtSS2mBbw==}
++
++  std-env@4.1.0:
++    resolution: {integrity: sha512-Rq7ybcX2RuC55r9oaPVEW7/xu3tj8u4GeBYHBWCychFtzMIr86A7e3PPEBPT37sHStKX3+TiX/Fr/ACmJLVlLQ==}
++
++  strip-indent@3.0.0:
++    resolution: {integrity: sha512-laJTa3Jb+VQpaC6DseHhF7dXVqHTfJPCRDaEbid/drOhgitgYku/letMUqOXFoWV0zIIUbjpdH2t+tYj4bQMRQ==}
++    engines: {node: '>=8'}
++
++  strip-json-comments@3.1.1:
++    resolution: {integrity: sha512-6fPc+R4ihwqP6N/aIv2f1gMH8lOVtWQHoqC4yK6oSDVVocumAsfCqjkXnqiYMhmMwS/mEHLp7Vehlt3ql6lEig==}
++    engines: {node: '>=8'}
++
++  supports-color@7.2.0:
++    resolution: {integrity: sha512-qpCAvRl9stuOHveKsn7HncJRvv501qIacKzQlO/+Lwxc9+0q2wLyv4Dfvt80/DPn2pqOBsJdDiogXGR9+OvwRw==}
++    engines: {node: '>=8'}
++
++  symbol-tree@3.2.4:
++    resolution: {integrity: sha512-9QNk5KwDF+Bvz+PyObkmSYjI5ksVUYtjW7AU22r2NKcfLJcXp96hkDWU3+XndOsUb+AQ9QhfzfCT2O+CNWT5Tw==}
++
++  tailwindcss@4.3.0:
++    resolution: {integrity: sha512-y6nxMGB1nMW9R6k96e5gdIFzcfL/gTJRNaqGes1YvkLnPVXzWgbqFF2yLC0T8G774n24cx3Pe8XrKoniCOAH+Q==}
++
++  tapable@2.3.3:
++    resolution: {integrity: sha512-uxc/zpqFg6x7C8vOE7lh6Lbda8eEL9zmVm/PLeTPBRhh1xCgdWaQ+J1CUieGpIfm2HdtsUpRv+HshiasBMcc6A==}
++    engines: {node: '>=6'}
++
++  tinybench@2.9.0:
++    resolution: {integrity: sha512-0+DUvqWMValLmha6lr4kD8iAMK1HzV0/aKnCtWb9v9641TnP/MFb7Pc2bxoxQjTXAErryXVgUOfv2YqNllqGeg==}
++
++  tinyexec@1.1.2:
++    resolution: {integrity: sha512-dAqSqE/RabpBKI8+h26GfLq6Vb3JVXs30XYQjdMjaj/c2tS8IYYMbIzP599KtRj7c57/wYApb3QjgRgXmrCukA==}
++    engines: {node: '>=18'}
++
++  tinyglobby@0.2.16:
++    resolution: {integrity: sha512-pn99VhoACYR8nFHhxqix+uvsbXineAasWm5ojXoN8xEwK5Kd3/TrhNn1wByuD52UxWRLy8pu+kRMniEi6Eq9Zg==}
++    engines: {node: '>=12.0.0'}
++
++  tinyrainbow@3.1.0:
++    resolution: {integrity: sha512-Bf+ILmBgretUrdJxzXM0SgXLZ3XfiaUuOj/IKQHuTXip+05Xn+uyEYdVg0kYDipTBcLrCVyUzAPz7QmArb0mmw==}
++    engines: {node: '>=14.0.0'}
++
++  tldts-core@7.0.30:
++    resolution: {integrity: sha512-uiHN8PIB1VmWyS98eZYja4xzlYqeFZVjb4OuYlJQnZAuJhMw4PbKQOKgHKhBdJR3FE/t5mUQ1Kd80++B+qhD1Q==}
++
++  tldts@7.0.30:
++    resolution: {integrity: sha512-ELrFxuqsDdHUwoh0XxDbxuLD3Wnz49Z57IFvTtvWy1hJdcMZjXLIuonjilCiWHlT2GbE4Wlv1wKVTzDFnXH1aw==}
++    hasBin: true
++
++  tough-cookie@6.0.1:
++    resolution: {integrity: sha512-LktZQb3IeoUWB9lqR5EWTHgW/VTITCXg4D21M+lvybRVdylLrRMnqaIONLVb5mav8vM19m44HIcGq4qASeu2Qw==}
++    engines: {node: '>=16'}
++
++  tr46@6.0.0:
++    resolution: {integrity: sha512-bLVMLPtstlZ4iMQHpFHTR7GAGj2jxi8Dg0s2h2MafAE4uSWF98FC/3MomU51iQAMf8/qDUbKWf5GxuvvVcXEhw==}
++    engines: {node: '>=20'}
++
++  tslib@2.8.1:
++    resolution: {integrity: sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==}
++
++  type-check@0.4.0:
++    resolution: {integrity: sha512-XleUoc9uwGXqjWwXaUTZAmzMcFZ5858QA2vvx1Ur5xIcixXIP+8LnFDgRplU30us6teqdlskFfu+ae4K79Ooew==}
++    engines: {node: '>= 0.8.0'}
++
++  typescript@5.7.3:
++    resolution: {integrity: sha512-84MVSjMEHP+FQRPy3pX9sTVV/INIex71s9TL2Gm5FG/WG1SqXeKyZ0k7/blY/4FdOzI12CBy1vGc4og/eus0fw==}
++    engines: {node: '>=14.17'}
++    hasBin: true
++
++  undici-types@6.21.0:
++    resolution: {integrity: sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==}
++
++  undici@7.25.0:
++    resolution: {integrity: sha512-xXnp4kTyor2Zq+J1FfPI6Eq3ew5h6Vl0F/8d9XU5zZQf1tX9s2Su1/3PiMmUANFULpmksxkClamIZcaUqryHsQ==}
++    engines: {node: '>=20.18.1'}
++
++  uri-js@4.4.1:
++    resolution: {integrity: sha512-7rKUyy33Q1yc98pQ1DAmLtwX109F7TIfWlW1Ydo8Wl1ii1SeHieeh0HHfPeL2fMXK6z0s8ecKs9frCuLJvndBg==}
++
++  vite@8.0.13:
++    resolution: {integrity: sha512-MFtjBYgzmSxmgA4RAfjIyXWpGe1oALnjgUTzzV7QLx/TKxCzjtMH6Fd9/eVK+5Fg1qNoz5VAwsmMs/NofrmJvw==}
++    engines: {node: ^20.19.0 || >=22.12.0}
++    hasBin: true
++    peerDependencies:
++      '@types/node': ^20.19.0 || >=22.12.0
++      '@vitejs/devtools': ^0.1.18
++      esbuild: ^0.27.0 || ^0.28.0
++      jiti: '>=1.21.0'
++      less: ^4.0.0
++      sass: ^1.70.0
++      sass-embedded: ^1.70.0
++      stylus: '>=0.54.8'
++      sugarss: ^5.0.0
++      terser: ^5.16.0
++      tsx: ^4.8.1
++      yaml: ^2.4.2
++    peerDependenciesMeta:
++      '@types/node':
++        optional: true
++      '@vitejs/devtools':
++        optional: true
++      esbuild:
++        optional: true
++      jiti:
++        optional: true
++      less:
++        optional: true
++      sass:
++        optional: true
++      sass-embedded:
++        optional: true
++      stylus:
++        optional: true
++      sugarss:
++        optional: true
++      terser:
++        optional: true
++      tsx:
++        optional: true
++      yaml:
++        optional: true
++
++  vitest@4.1.6:
++    resolution: {integrity: sha512-6lvjbS3p9b4CrdCmguzbh2/4uoXhGE2q71R4OX5sqF9R1bo9Xd6fGrMAfvp5wnCzlBnFVdCOp6onuTQVbo8iUQ==}
++    engines: {node: ^20.0.0 || ^22.0.0 || >=24.0.0}
++    hasBin: true
++    peerDependencies:
++      '@edge-runtime/vm': '*'
++      '@opentelemetry/api': ^1.9.0
++      '@types/node': ^20.0.0 || ^22.0.0 || >=24.0.0
++      '@vitest/browser-playwright': 4.1.6
++      '@vitest/browser-preview': 4.1.6
++      '@vitest/browser-webdriverio': 4.1.6
++      '@vitest/coverage-istanbul': 4.1.6
++      '@vitest/coverage-v8': 4.1.6
++      '@vitest/ui': 4.1.6
++      happy-dom: '*'
++      jsdom: '*'
++      vite: ^6.0.0 || ^7.0.0 || ^8.0.0
++    peerDependenciesMeta:
++      '@edge-runtime/vm':
++        optional: true
++      '@opentelemetry/api':
++        optional: true
++      '@types/node':
++        optional: true
++      '@vitest/browser-playwright':
++        optional: true
++      '@vitest/browser-preview':
++        optional: true
++      '@vitest/browser-webdriverio':
++        optional: true
++      '@vitest/coverage-istanbul':
++        optional: true
++      '@vitest/coverage-v8':
++        optional: true
++      '@vitest/ui':
++        optional: true
++      happy-dom:
++        optional: true
++      jsdom:
++        optional: true
++
++  w3c-xmlserializer@5.0.0:
++    resolution: {integrity: sha512-o8qghlI8NZHU1lLPrpi2+Uq7abh4GGPpYANlalzWxyWteJOCsr/P+oPBA49TOLu5FTZO4d3F9MnWJfiMo4BkmA==}
++    engines: {node: '>=18'}
++
++  webidl-conversions@8.0.1:
++    resolution: {integrity: sha512-BMhLD/Sw+GbJC21C/UgyaZX41nPt8bUTg+jWyDeg7e7YN4xOM05YPSIXceACnXVtqyEw/LMClUQMtMZ+PGGpqQ==}
++    engines: {node: '>=20'}
++
++  whatwg-mimetype@5.0.0:
++    resolution: {integrity: sha512-sXcNcHOC51uPGF0P/D4NVtrkjSU2fNsm9iog4ZvZJsL3rjoDAzXZhkm2MWt1y+PUdggKAYVoMAIYcs78wJ51Cw==}
++    engines: {node: '>=20'}
++
++  whatwg-url@16.0.1:
++    resolution: {integrity: sha512-1to4zXBxmXHV3IiSSEInrreIlu02vUOvrhxJJH5vcxYTBDAx51cqZiKdyTxlecdKNSjj8EcxGBxNf6Vg+945gw==}
++    engines: {node: ^20.19.0 || ^22.12.0 || >=24.0.0}
++
++  which@2.0.2:
++    resolution: {integrity: sha512-BLI3Tl1TW3Pvl70l3yq3Y64i+awpwXqsGBYWkkqMtnbXgrMD+yj7rhW0kuEDxzJaYXGjEW5ogapKNMEKNMjibA==}
++    engines: {node: '>= 8'}
++    hasBin: true
++
++  why-is-node-running@2.3.0:
++    resolution: {integrity: sha512-hUrmaWBdVDcxvYqnyh09zunKzROWjbZTiNy8dBEjkS7ehEDQibXJ7XvlmtbwuTclUiIyN+CyXQD4Vmko8fNm8w==}
++    engines: {node: '>=8'}
++    hasBin: true
++
++  word-wrap@1.2.5:
++    resolution: {integrity: sha512-BN22B5eaMMI9UMtjrGd5g5eCYPpCPDUy0FJXbYsaT5zYxjFOckS53SQDE3pWkVoWpHXVb3BrYcEN4Twa55B5cA==}
++    engines: {node: '>=0.10.0'}
++
++  xml-name-validator@5.0.0:
++    resolution: {integrity: sha512-EvGK8EJ3DhaHfbRlETOWAS5pO9MZITeauHKJyb8wyajUfQUenkIg2MvLDTZ4T/TgIcm3HU0TFBgWWboAZ30UHg==}
++    engines: {node: '>=18'}
++
++  xmlchars@2.2.0:
++    resolution: {integrity: sha512-JZnDKK8B0RCDw84FNdDAIpZK+JuJw+s7Lz8nksI7SIuU3UXJJslUthsi+uWBUYOwPFwW7W7PRLRfUKpxjtjFCw==}
++
++  yocto-queue@0.1.0:
++    resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
++    engines: {node: '>=10'}
++
++snapshots:
++
++  '@adobe/css-tools@4.4.4': {}
++
++  '@asamuzakjp/css-color@5.1.11':
++    dependencies:
++      '@asamuzakjp/generational-cache': 1.0.1
++      '@csstools/css-calc': 3.2.1(@csstools/css-parser-algorithms@4.0.0(@csstools/css-tokenizer@4.0.0))(@csstools/css-tokenizer@4.0.0)
++      '@csstools/css-color-parser': 4.1.1(@csstools/css-parser-algorithms@4.0.0(@csstools/css-tokenizer@4.0.0))(@csstools/css-tokenizer@4.0.0)
++      '@csstools/css-parser-algorithms': 4.0.0(@csstools/css-tokenizer@4.0.0)
++      '@csstools/css-tokenizer': 4.0.0
++
++  '@asamuzakjp/dom-selector@7.1.1':
++    dependencies:
++      '@asamuzakjp/generational-cache': 1.0.1
++      '@asamuzakjp/nwsapi': 2.3.9
++      bidi-js: 1.0.3
++      css-tree: 3.2.1
++      is-potential-custom-element-name: 1.0.1
++
++  '@asamuzakjp/generational-cache@1.0.1': {}
++
++  '@asamuzakjp/nwsapi@2.3.9': {}
++
++  '@babel/code-frame@7.29.0':
++    dependencies:
++      '@babel/helper-validator-identifier': 7.28.5
++      js-tokens: 4.0.0
++      picocolors: 1.1.1
++
++  '@babel/helper-validator-identifier@7.28.5': {}
++
++  '@babel/runtime@7.29.2': {}
++
++  '@bramus/specificity@2.4.2':
++    dependencies:
++      css-tree: 3.2.1
++
++  '@csstools/color-helpers@6.0.2': {}
++
++  '@csstools/css-calc@3.2.1(@csstools/css-parser-algorithms@4.0.0(@csstools/css-tokenizer@4.0.0))(@csstools/css-tokenizer@4.0.0)':
++    dependencies:
++      '@csstools/css-parser-algorithms': 4.0.0(@csstools/css-tokenizer@4.0.0)
++      '@csstools/css-tokenizer': 4.0.0
++
++  '@csstools/css-color-parser@4.1.1(@csstools/css-parser-algorithms@4.0.0(@csstools/css-tokenizer@4.0.0))(@csstools/css-tokenizer@4.0.0)':
++    dependencies:
++      '@csstools/color-helpers': 6.0.2
++      '@csstools/css-calc': 3.2.1(@csstools/css-parser-algorithms@4.0.0(@csstools/css-tokenizer@4.0.0))(@csstools/css-tokenizer@4.0.0)
++      '@csstools/css-parser-algorithms': 4.0.0(@csstools/css-tokenizer@4.0.0)
++      '@csstools/css-tokenizer': 4.0.0
++
++  '@csstools/css-parser-algorithms@4.0.0(@csstools/css-tokenizer@4.0.0)':
++    dependencies:
++      '@csstools/css-tokenizer': 4.0.0
++
++  '@csstools/css-syntax-patches-for-csstree@1.1.4(css-tree@3.2.1)':
++    optionalDependencies:
++      css-tree: 3.2.1
++
++  '@csstools/css-tokenizer@4.0.0': {}
++
++  '@emnapi/core@1.10.0':
++    dependencies:
++      '@emnapi/wasi-threads': 1.2.1
++      tslib: 2.8.1
++    optional: true
++
++  '@emnapi/runtime@1.10.0':
++    dependencies:
++      tslib: 2.8.1
++    optional: true
++
++  '@emnapi/wasi-threads@1.2.1':
++    dependencies:
++      tslib: 2.8.1
++    optional: true
++
++  '@eslint-community/eslint-utils@4.9.1(eslint@9.39.4(jiti@2.7.0))':
++    dependencies:
++      eslint: 9.39.4(jiti@2.7.0)
++      eslint-visitor-keys: 3.4.3
++
++  '@eslint-community/regexpp@4.12.2': {}
++
++  '@eslint/config-array@0.21.2':
++    dependencies:
++      '@eslint/object-schema': 2.1.7
++      debug: 4.4.3
++      minimatch: 3.1.5
++    transitivePeerDependencies:
++      - supports-color
++
++  '@eslint/config-helpers@0.4.2':
++    dependencies:
++      '@eslint/core': 0.17.0
++
++  '@eslint/core@0.17.0':
++    dependencies:
++      '@types/json-schema': 7.0.15
++
++  '@eslint/eslintrc@3.3.5':
++    dependencies:
++      ajv: 6.15.0
++      debug: 4.4.3
++      espree: 10.4.0
++      globals: 14.0.0
++      ignore: 5.3.2
++      import-fresh: 3.3.1
++      js-yaml: 4.1.1
++      minimatch: 3.1.5
++      strip-json-comments: 3.1.1
++    transitivePeerDependencies:
++      - supports-color
++
++  '@eslint/js@9.39.4': {}
++
++  '@eslint/object-schema@2.1.7': {}
++
++  '@eslint/plugin-kit@0.4.1':
++    dependencies:
++      '@eslint/core': 0.17.0
++      levn: 0.4.1
++
++  '@exodus/bytes@1.15.0': {}
++
++  '@humanfs/core@0.19.2':
++    dependencies:
++      '@humanfs/types': 0.15.0
++
++  '@humanfs/node@0.16.8':
++    dependencies:
++      '@humanfs/core': 0.19.2
++      '@humanfs/types': 0.15.0
++      '@humanwhocodes/retry': 0.4.3
++
++  '@humanfs/types@0.15.0': {}
++
++  '@humanwhocodes/module-importer@1.0.1': {}
++
++  '@humanwhocodes/retry@0.4.3': {}
++
++  '@jridgewell/gen-mapping@0.3.13':
++    dependencies:
++      '@jridgewell/sourcemap-codec': 1.5.5
++      '@jridgewell/trace-mapping': 0.3.31
++
++  '@jridgewell/remapping@2.3.5':
++    dependencies:
++      '@jridgewell/gen-mapping': 0.3.13
++      '@jridgewell/trace-mapping': 0.3.31
++
++  '@jridgewell/resolve-uri@3.1.2': {}
++
++  '@jridgewell/sourcemap-codec@1.5.5': {}
++
++  '@jridgewell/trace-mapping@0.3.31':
++    dependencies:
++      '@jridgewell/resolve-uri': 3.1.2
++      '@jridgewell/sourcemap-codec': 1.5.5
++
++  '@napi-rs/wasm-runtime@1.1.4(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)':
++    dependencies:
++      '@emnapi/core': 1.10.0
++      '@emnapi/runtime': 1.10.0
++      '@tybys/wasm-util': 0.10.2
++    optional: true
++
++  '@oxc-project/types@0.130.0': {}
++
++  '@rolldown/binding-android-arm64@1.0.1':
++    optional: true
++
++  '@rolldown/binding-darwin-arm64@1.0.1':
++    optional: true
++
++  '@rolldown/binding-darwin-x64@1.0.1':
++    optional: true
++
++  '@rolldown/binding-freebsd-x64@1.0.1':
++    optional: true
++
++  '@rolldown/binding-linux-arm-gnueabihf@1.0.1':
++    optional: true
++
++  '@rolldown/binding-linux-arm64-gnu@1.0.1':
++    optional: true
++
++  '@rolldown/binding-linux-arm64-musl@1.0.1':
++    optional: true
++
++  '@rolldown/binding-linux-ppc64-gnu@1.0.1':
++    optional: true
++
++  '@rolldown/binding-linux-s390x-gnu@1.0.1':
++    optional: true
++
++  '@rolldown/binding-linux-x64-gnu@1.0.1':
++    optional: true
++
++  '@rolldown/binding-linux-x64-musl@1.0.1':
++    optional: true
++
++  '@rolldown/binding-openharmony-arm64@1.0.1':
++    optional: true
++
++  '@rolldown/binding-wasm32-wasi@1.0.1':
++    dependencies:
++      '@emnapi/core': 1.10.0
++      '@emnapi/runtime': 1.10.0
++      '@napi-rs/wasm-runtime': 1.1.4(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)
++    optional: true
++
++  '@rolldown/binding-win32-arm64-msvc@1.0.1':
++    optional: true
++
++  '@rolldown/binding-win32-x64-msvc@1.0.1':
++    optional: true
++
++  '@rolldown/pluginutils@1.0.1': {}
++
++  '@standard-schema/spec@1.1.0': {}
++
++  '@tailwindcss/node@4.3.0':
++    dependencies:
++      '@jridgewell/remapping': 2.3.5
++      enhanced-resolve: 5.21.4
++      jiti: 2.7.0
++      lightningcss: 1.32.0
++      magic-string: 0.30.21
++      source-map-js: 1.2.1
++      tailwindcss: 4.3.0
++
++  '@tailwindcss/oxide-android-arm64@4.3.0':
++    optional: true
++
++  '@tailwindcss/oxide-darwin-arm64@4.3.0':
++    optional: true
++
++  '@tailwindcss/oxide-darwin-x64@4.3.0':
++    optional: true
++
++  '@tailwindcss/oxide-freebsd-x64@4.3.0':
++    optional: true
++
++  '@tailwindcss/oxide-linux-arm-gnueabihf@4.3.0':
++    optional: true
++
++  '@tailwindcss/oxide-linux-arm64-gnu@4.3.0':
++    optional: true
++
++  '@tailwindcss/oxide-linux-arm64-musl@4.3.0':
++    optional: true
++
++  '@tailwindcss/oxide-linux-x64-gnu@4.3.0':
++    optional: true
++
++  '@tailwindcss/oxide-linux-x64-musl@4.3.0':
++    optional: true
++
++  '@tailwindcss/oxide-wasm32-wasi@4.3.0':
++    optional: true
++
++  '@tailwindcss/oxide-win32-arm64-msvc@4.3.0':
++    optional: true
++
++  '@tailwindcss/oxide-win32-x64-msvc@4.3.0':
++    optional: true
++
++  '@tailwindcss/oxide@4.3.0':
++    optionalDependencies:
++      '@tailwindcss/oxide-android-arm64': 4.3.0
++      '@tailwindcss/oxide-darwin-arm64': 4.3.0
++      '@tailwindcss/oxide-darwin-x64': 4.3.0
++      '@tailwindcss/oxide-freebsd-x64': 4.3.0
++      '@tailwindcss/oxide-linux-arm-gnueabihf': 4.3.0
++      '@tailwindcss/oxide-linux-arm64-gnu': 4.3.0
++      '@tailwindcss/oxide-linux-arm64-musl': 4.3.0
++      '@tailwindcss/oxide-linux-x64-gnu': 4.3.0
++      '@tailwindcss/oxide-linux-x64-musl': 4.3.0
++      '@tailwindcss/oxide-wasm32-wasi': 4.3.0
++      '@tailwindcss/oxide-win32-arm64-msvc': 4.3.0
++      '@tailwindcss/oxide-win32-x64-msvc': 4.3.0
++
++  '@tailwindcss/vite@4.3.0(vite@8.0.13(@types/node@22.19.19)(jiti@2.7.0))':
++    dependencies:
++      '@tailwindcss/node': 4.3.0
++      '@tailwindcss/oxide': 4.3.0
++      tailwindcss: 4.3.0
++      vite: 8.0.13(@types/node@22.19.19)(jiti@2.7.0)
++
++  '@testing-library/dom@10.4.1':
++    dependencies:
++      '@babel/code-frame': 7.29.0
++      '@babel/runtime': 7.29.2
++      '@types/aria-query': 5.0.4
++      aria-query: 5.3.0
++      dom-accessibility-api: 0.5.16
++      lz-string: 1.5.0
++      picocolors: 1.1.1
++      pretty-format: 27.5.1
++
++  '@testing-library/jest-dom@6.9.1':
++    dependencies:
++      '@adobe/css-tools': 4.4.4
++      aria-query: 5.3.2
++      css.escape: 1.5.1
++      dom-accessibility-api: 0.6.3
++      picocolors: 1.1.1
++      redent: 3.0.0
++
++  '@testing-library/react@16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)':
++    dependencies:
++      '@babel/runtime': 7.29.2
++      '@testing-library/dom': 10.4.1
++      react: 19.2.6
++      react-dom: 19.2.6(react@19.2.6)
++    optionalDependencies:
++      '@types/react': 19.2.14
++      '@types/react-dom': 19.2.3(@types/react@19.2.14)
++
++  '@tybys/wasm-util@0.10.2':
++    dependencies:
++      tslib: 2.8.1
++    optional: true
++
++  '@types/aria-query@5.0.4': {}
++
++  '@types/chai@5.2.3':
++    dependencies:
++      '@types/deep-eql': 4.0.2
++      assertion-error: 2.0.1
++
++  '@types/deep-eql@4.0.2': {}
++
++  '@types/estree@1.0.9': {}
++
++  '@types/json-schema@7.0.15': {}
++
++  '@types/node@22.19.19':
++    dependencies:
++      undici-types: 6.21.0
++
++  '@types/react-dom@19.2.3(@types/react@19.2.14)':
++    dependencies:
++      '@types/react': 19.2.14
++
++  '@types/react@19.2.14':
++    dependencies:
++      csstype: 3.2.3
++
++  '@vitejs/plugin-react@6.0.2(vite@8.0.13(@types/node@22.19.19)(jiti@2.7.0))':
++    dependencies:
++      '@rolldown/pluginutils': 1.0.1
++      vite: 8.0.13(@types/node@22.19.19)(jiti@2.7.0)
++
++  '@vitest/expect@4.1.6':
++    dependencies:
++      '@standard-schema/spec': 1.1.0
++      '@types/chai': 5.2.3
++      '@vitest/spy': 4.1.6
++      '@vitest/utils': 4.1.6
++      chai: 6.2.2
++      tinyrainbow: 3.1.0
++
++  '@vitest/mocker@4.1.6(vite@8.0.13(@types/node@22.19.19)(jiti@2.7.0))':
++    dependencies:
++      '@vitest/spy': 4.1.6
++      estree-walker: 3.0.3
++      magic-string: 0.30.21
++    optionalDependencies:
++      vite: 8.0.13(@types/node@22.19.19)(jiti@2.7.0)
++
++  '@vitest/pretty-format@4.1.6':
++    dependencies:
++      tinyrainbow: 3.1.0
++
++  '@vitest/runner@4.1.6':
++    dependencies:
++      '@vitest/utils': 4.1.6
++      pathe: 2.0.3
++
++  '@vitest/snapshot@4.1.6':
++    dependencies:
++      '@vitest/pretty-format': 4.1.6
++      '@vitest/utils': 4.1.6
++      magic-string: 0.30.21
++      pathe: 2.0.3
++
++  '@vitest/spy@4.1.6': {}
++
++  '@vitest/utils@4.1.6':
++    dependencies:
++      '@vitest/pretty-format': 4.1.6
++      convert-source-map: 2.0.0
++      tinyrainbow: 3.1.0
++
++  acorn-jsx@5.3.2(acorn@8.16.0):
++    dependencies:
++      acorn: 8.16.0
++
++  acorn@8.16.0: {}
++
++  ajv@6.15.0:
++    dependencies:
++      fast-deep-equal: 3.1.3
++      fast-json-stable-stringify: 2.1.0
++      json-schema-traverse: 0.4.1
++      uri-js: 4.4.1
++
++  ansi-regex@5.0.1: {}
++
++  ansi-styles@4.3.0:
++    dependencies:
++      color-convert: 2.0.1
++
++  ansi-styles@5.2.0: {}
++
++  argparse@2.0.1: {}
++
++  aria-query@5.3.0:
++    dependencies:
++      dequal: 2.0.3
++
++  aria-query@5.3.2: {}
++
++  assertion-error@2.0.1: {}
++
++  balanced-match@1.0.2: {}
++
++  bidi-js@1.0.3:
++    dependencies:
++      require-from-string: 2.0.2
++
++  brace-expansion@1.1.14:
++    dependencies:
++      balanced-match: 1.0.2
++      concat-map: 0.0.1
++
++  callsites@3.1.0: {}
++
++  chai@6.2.2: {}
++
++  chalk@4.1.2:
++    dependencies:
++      ansi-styles: 4.3.0
++      supports-color: 7.2.0
++
++  color-convert@2.0.1:
++    dependencies:
++      color-name: 1.1.4
++
++  color-name@1.1.4: {}
++
++  concat-map@0.0.1: {}
++
++  convert-source-map@2.0.0: {}
++
++  cross-spawn@7.0.6:
++    dependencies:
++      path-key: 3.1.1
++      shebang-command: 2.0.0
++      which: 2.0.2
++
++  css-tree@3.2.1:
++    dependencies:
++      mdn-data: 2.27.1
++      source-map-js: 1.2.1
++
++  css.escape@1.5.1: {}
++
++  csstype@3.2.3: {}
++
++  data-urls@7.0.0:
++    dependencies:
++      whatwg-mimetype: 5.0.0
++      whatwg-url: 16.0.1
++    transitivePeerDependencies:
++      - '@noble/hashes'
++
++  debug@4.4.3:
++    dependencies:
++      ms: 2.1.3
++
++  decimal.js@10.6.0: {}
++
++  deep-is@0.1.4: {}
++
++  dequal@2.0.3: {}
++
++  detect-libc@2.1.2: {}
++
++  dom-accessibility-api@0.5.16: {}
++
++  dom-accessibility-api@0.6.3: {}
++
++  enhanced-resolve@5.21.4:
++    dependencies:
++      graceful-fs: 4.2.11
++      tapable: 2.3.3
++
++  entities@8.0.0: {}
++
++  es-module-lexer@2.1.0: {}
++
++  escape-string-regexp@4.0.0: {}
++
++  eslint-scope@8.4.0:
++    dependencies:
++      esrecurse: 4.3.0
++      estraverse: 5.3.0
++
++  eslint-visitor-keys@3.4.3: {}
++
++  eslint-visitor-keys@4.2.1: {}
++
++  eslint@9.39.4(jiti@2.7.0):
++    dependencies:
++      '@eslint-community/eslint-utils': 4.9.1(eslint@9.39.4(jiti@2.7.0))
++      '@eslint-community/regexpp': 4.12.2
++      '@eslint/config-array': 0.21.2
++      '@eslint/config-helpers': 0.4.2
++      '@eslint/core': 0.17.0
++      '@eslint/eslintrc': 3.3.5
++      '@eslint/js': 9.39.4
++      '@eslint/plugin-kit': 0.4.1
++      '@humanfs/node': 0.16.8
++      '@humanwhocodes/module-importer': 1.0.1
++      '@humanwhocodes/retry': 0.4.3
++      '@types/estree': 1.0.9
++      ajv: 6.15.0
++      chalk: 4.1.2
++      cross-spawn: 7.0.6
++      debug: 4.4.3
++      escape-string-regexp: 4.0.0
++      eslint-scope: 8.4.0
++      eslint-visitor-keys: 4.2.1
++      espree: 10.4.0
++      esquery: 1.7.0
++      esutils: 2.0.3
++      fast-deep-equal: 3.1.3
++      file-entry-cache: 8.0.0
++      find-up: 5.0.0
++      glob-parent: 6.0.2
++      ignore: 5.3.2
++      imurmurhash: 0.1.4
++      is-glob: 4.0.3
++      json-stable-stringify-without-jsonify: 1.0.1
++      lodash.merge: 4.6.2
++      minimatch: 3.1.5
++      natural-compare: 1.4.0
++      optionator: 0.9.4
++    optionalDependencies:
++      jiti: 2.7.0
++    transitivePeerDependencies:
++      - supports-color
++
++  espree@10.4.0:
++    dependencies:
++      acorn: 8.16.0
++      acorn-jsx: 5.3.2(acorn@8.16.0)
++      eslint-visitor-keys: 4.2.1
++
++  esquery@1.7.0:
++    dependencies:
++      estraverse: 5.3.0
++
++  esrecurse@4.3.0:
++    dependencies:
++      estraverse: 5.3.0
++
++  estraverse@5.3.0: {}
++
++  estree-walker@3.0.3:
++    dependencies:
++      '@types/estree': 1.0.9
++
++  esutils@2.0.3: {}
++
++  expect-type@1.3.0: {}
++
++  fast-deep-equal@3.1.3: {}
++
++  fast-json-stable-stringify@2.1.0: {}
++
++  fast-levenshtein@2.0.6: {}
++
++  fdir@6.5.0(picomatch@4.0.4):
++    optionalDependencies:
++      picomatch: 4.0.4
++
++  file-entry-cache@8.0.0:
++    dependencies:
++      flat-cache: 4.0.1
++
++  find-up@5.0.0:
++    dependencies:
++      locate-path: 6.0.0
++      path-exists: 4.0.0
++
++  flat-cache@4.0.1:
++    dependencies:
++      flatted: 3.4.2
++      keyv: 4.5.4
++
++  flatted@3.4.2: {}
++
++  fsevents@2.3.3:
++    optional: true
++
++  glob-parent@6.0.2:
++    dependencies:
++      is-glob: 4.0.3
++
++  globals@14.0.0: {}
++
++  graceful-fs@4.2.11: {}
++
++  has-flag@4.0.0: {}
++
++  html-encoding-sniffer@6.0.0:
++    dependencies:
++      '@exodus/bytes': 1.15.0
++    transitivePeerDependencies:
++      - '@noble/hashes'
++
++  ignore@5.3.2: {}
++
++  import-fresh@3.3.1:
++    dependencies:
++      parent-module: 1.0.1
++      resolve-from: 4.0.0
++
++  imurmurhash@0.1.4: {}
++
++  indent-string@4.0.0: {}
++
++  is-extglob@2.1.1: {}
++
++  is-glob@4.0.3:
++    dependencies:
++      is-extglob: 2.1.1
++
++  is-potential-custom-element-name@1.0.1: {}
++
++  isexe@2.0.0: {}
++
++  jiti@2.7.0: {}
++
++  js-tokens@4.0.0: {}
++
++  js-yaml@4.1.1:
++    dependencies:
++      argparse: 2.0.1
++
++  jsdom@29.1.1:
++    dependencies:
++      '@asamuzakjp/css-color': 5.1.11
++      '@asamuzakjp/dom-selector': 7.1.1
++      '@bramus/specificity': 2.4.2
++      '@csstools/css-syntax-patches-for-csstree': 1.1.4(css-tree@3.2.1)
++      '@exodus/bytes': 1.15.0
++      css-tree: 3.2.1
++      data-urls: 7.0.0
++      decimal.js: 10.6.0
++      html-encoding-sniffer: 6.0.0
++      is-potential-custom-element-name: 1.0.1
++      lru-cache: 11.4.0
++      parse5: 8.0.1
++      saxes: 6.0.0
++      symbol-tree: 3.2.4
++      tough-cookie: 6.0.1
++      undici: 7.25.0
++      w3c-xmlserializer: 5.0.0
++      webidl-conversions: 8.0.1
++      whatwg-mimetype: 5.0.0
++      whatwg-url: 16.0.1
++      xml-name-validator: 5.0.0
++    transitivePeerDependencies:
++      - '@noble/hashes'
++
++  json-buffer@3.0.1: {}
++
++  json-schema-traverse@0.4.1: {}
++
++  json-stable-stringify-without-jsonify@1.0.1: {}
++
++  keyv@4.5.4:
++    dependencies:
++      json-buffer: 3.0.1
++
++  levn@0.4.1:
++    dependencies:
++      prelude-ls: 1.2.1
++      type-check: 0.4.0
++
++  lightningcss-android-arm64@1.32.0:
++    optional: true
++
++  lightningcss-darwin-arm64@1.32.0:
++    optional: true
++
++  lightningcss-darwin-x64@1.32.0:
++    optional: true
++
++  lightningcss-freebsd-x64@1.32.0:
++    optional: true
++
++  lightningcss-linux-arm-gnueabihf@1.32.0:
++    optional: true
++
++  lightningcss-linux-arm64-gnu@1.32.0:
++    optional: true
++
++  lightningcss-linux-arm64-musl@1.32.0:
++    optional: true
++
++  lightningcss-linux-x64-gnu@1.32.0:
++    optional: true
++
++  lightningcss-linux-x64-musl@1.32.0:
++    optional: true
++
++  lightningcss-win32-arm64-msvc@1.32.0:
++    optional: true
++
++  lightningcss-win32-x64-msvc@1.32.0:
++    optional: true
++
++  lightningcss@1.32.0:
++    dependencies:
++      detect-libc: 2.1.2
++    optionalDependencies:
++      lightningcss-android-arm64: 1.32.0
++      lightningcss-darwin-arm64: 1.32.0
++      lightningcss-darwin-x64: 1.32.0
++      lightningcss-freebsd-x64: 1.32.0
++      lightningcss-linux-arm-gnueabihf: 1.32.0
++      lightningcss-linux-arm64-gnu: 1.32.0
++      lightningcss-linux-arm64-musl: 1.32.0
++      lightningcss-linux-x64-gnu: 1.32.0
++      lightningcss-linux-x64-musl: 1.32.0
++      lightningcss-win32-arm64-msvc: 1.32.0
++      lightningcss-win32-x64-msvc: 1.32.0
++
++  locate-path@6.0.0:
++    dependencies:
++      p-locate: 5.0.0
++
++  lodash.merge@4.6.2: {}
++
++  lru-cache@11.4.0: {}
++
++  lucide-react@1.16.0(react@19.2.6):
++    dependencies:
++      react: 19.2.6
++
++  lz-string@1.5.0: {}
++
++  magic-string@0.30.21:
++    dependencies:
++      '@jridgewell/sourcemap-codec': 1.5.5
++
++  mdn-data@2.27.1: {}
++
++  min-indent@1.0.1: {}
++
++  minimatch@3.1.5:
++    dependencies:
++      brace-expansion: 1.1.14
++
++  ms@2.1.3: {}
++
++  nanoid@3.3.12: {}
++
++  natural-compare@1.4.0: {}
++
++  obug@2.1.1: {}
++
++  optionator@0.9.4:
++    dependencies:
++      deep-is: 0.1.4
++      fast-levenshtein: 2.0.6
++      levn: 0.4.1
++      prelude-ls: 1.2.1
++      type-check: 0.4.0
++      word-wrap: 1.2.5
++
++  p-limit@3.1.0:
++    dependencies:
++      yocto-queue: 0.1.0
++
++  p-locate@5.0.0:
++    dependencies:
++      p-limit: 3.1.0
++
++  parent-module@1.0.1:
++    dependencies:
++      callsites: 3.1.0
++
++  parse5@8.0.1:
++    dependencies:
++      entities: 8.0.0
++
++  path-exists@4.0.0: {}
++
++  path-key@3.1.1: {}
++
++  pathe@2.0.3: {}
++
++  picocolors@1.1.1: {}
++
++  picomatch@4.0.4: {}
++
++  postcss@8.5.14:
++    dependencies:
++      nanoid: 3.3.12
++      picocolors: 1.1.1
++      source-map-js: 1.2.1
++
++  prelude-ls@1.2.1: {}
++
++  pretty-format@27.5.1:
++    dependencies:
++      ansi-regex: 5.0.1
++      ansi-styles: 5.2.0
++      react-is: 17.0.2
++
++  punycode@2.3.1: {}
++
++  react-dom@19.2.6(react@19.2.6):
++    dependencies:
++      react: 19.2.6
++      scheduler: 0.27.0
++
++  react-is@17.0.2: {}
++
++  react@19.2.6: {}
++
++  redent@3.0.0:
++    dependencies:
++      indent-string: 4.0.0
++      strip-indent: 3.0.0
++
++  require-from-string@2.0.2: {}
++
++  resolve-from@4.0.0: {}
++
++  rolldown@1.0.1:
++    dependencies:
++      '@oxc-project/types': 0.130.0
++      '@rolldown/pluginutils': 1.0.1
++    optionalDependencies:
++      '@rolldown/binding-android-arm64': 1.0.1
++      '@rolldown/binding-darwin-arm64': 1.0.1
++      '@rolldown/binding-darwin-x64': 1.0.1
++      '@rolldown/binding-freebsd-x64': 1.0.1
++      '@rolldown/binding-linux-arm-gnueabihf': 1.0.1
++      '@rolldown/binding-linux-arm64-gnu': 1.0.1
++      '@rolldown/binding-linux-arm64-musl': 1.0.1
++      '@rolldown/binding-linux-ppc64-gnu': 1.0.1
++      '@rolldown/binding-linux-s390x-gnu': 1.0.1
++      '@rolldown/binding-linux-x64-gnu': 1.0.1
++      '@rolldown/binding-linux-x64-musl': 1.0.1
++      '@rolldown/binding-openharmony-arm64': 1.0.1
++      '@rolldown/binding-wasm32-wasi': 1.0.1
++      '@rolldown/binding-win32-arm64-msvc': 1.0.1
++      '@rolldown/binding-win32-x64-msvc': 1.0.1
++
++  saxes@6.0.0:
++    dependencies:
++      xmlchars: 2.2.0
++
++  scheduler@0.27.0: {}
++
++  shebang-command@2.0.0:
++    dependencies:
++      shebang-regex: 3.0.0
++
++  shebang-regex@3.0.0: {}
++
++  siginfo@2.0.0: {}
++
++  source-map-js@1.2.1: {}
++
++  stackback@0.0.2: {}
++
++  std-env@4.1.0: {}
++
++  strip-indent@3.0.0:
++    dependencies:
++      min-indent: 1.0.1
++
++  strip-json-comments@3.1.1: {}
++
++  supports-color@7.2.0:
++    dependencies:
++      has-flag: 4.0.0
++
++  symbol-tree@3.2.4: {}
++
++  tailwindcss@4.3.0: {}
++
++  tapable@2.3.3: {}
++
++  tinybench@2.9.0: {}
++
++  tinyexec@1.1.2: {}
++
++  tinyglobby@0.2.16:
++    dependencies:
++      fdir: 6.5.0(picomatch@4.0.4)
++      picomatch: 4.0.4
++
++  tinyrainbow@3.1.0: {}
++
++  tldts-core@7.0.30: {}
++
++  tldts@7.0.30:
++    dependencies:
++      tldts-core: 7.0.30
++
++  tough-cookie@6.0.1:
++    dependencies:
++      tldts: 7.0.30
++
++  tr46@6.0.0:
++    dependencies:
++      punycode: 2.3.1
++
++  tslib@2.8.1:
++    optional: true
++
++  type-check@0.4.0:
++    dependencies:
++      prelude-ls: 1.2.1
++
++  typescript@5.7.3: {}
++
++  undici-types@6.21.0: {}
++
++  undici@7.25.0: {}
++
++  uri-js@4.4.1:
++    dependencies:
++      punycode: 2.3.1
++
++  vite@8.0.13(@types/node@22.19.19)(jiti@2.7.0):
++    dependencies:
++      lightningcss: 1.32.0
++      picomatch: 4.0.4
++      postcss: 8.5.14
++      rolldown: 1.0.1
++      tinyglobby: 0.2.16
++    optionalDependencies:
++      '@types/node': 22.19.19
++      fsevents: 2.3.3
++      jiti: 2.7.0
++
++  vitest@4.1.6(@types/node@22.19.19)(jsdom@29.1.1)(vite@8.0.13(@types/node@22.19.19)(jiti@2.7.0)):
++    dependencies:
++      '@vitest/expect': 4.1.6
++      '@vitest/mocker': 4.1.6(vite@8.0.13(@types/node@22.19.19)(jiti@2.7.0))
++      '@vitest/pretty-format': 4.1.6
++      '@vitest/runner': 4.1.6
++      '@vitest/snapshot': 4.1.6
++      '@vitest/spy': 4.1.6
++      '@vitest/utils': 4.1.6
++      es-module-lexer: 2.1.0
++      expect-type: 1.3.0
++      magic-string: 0.30.21
++      obug: 2.1.1
++      pathe: 2.0.3
++      picomatch: 4.0.4
++      std-env: 4.1.0
++      tinybench: 2.9.0
++      tinyexec: 1.1.2
++      tinyglobby: 0.2.16
++      tinyrainbow: 3.1.0
++      vite: 8.0.13(@types/node@22.19.19)(jiti@2.7.0)
++      why-is-node-running: 2.3.0
++    optionalDependencies:
++      '@types/node': 22.19.19
++      jsdom: 29.1.1
++    transitivePeerDependencies:
++      - msw
++
++  w3c-xmlserializer@5.0.0:
++    dependencies:
++      xml-name-validator: 5.0.0
++
++  webidl-conversions@8.0.1: {}
++
++  whatwg-mimetype@5.0.0: {}
++
++  whatwg-url@16.0.1:
++    dependencies:
++      '@exodus/bytes': 1.15.0
++      tr46: 6.0.0
++      webidl-conversions: 8.0.1
++    transitivePeerDependencies:
++      - '@noble/hashes'
++
++  which@2.0.2:
++    dependencies:
++      isexe: 2.0.0
++
++  why-is-node-running@2.3.0:
++    dependencies:
++      siginfo: 2.0.0
++      stackback: 0.0.2
++
++  word-wrap@1.2.5: {}
++
++  xml-name-validator@5.0.0: {}
++
++  xmlchars@2.2.0: {}
++
++  yocto-queue@0.1.0: {}
+diff --git a/docker-compose.yml b/docker-compose.yml
+new file mode 100644
+index 0000000..af6ff6d
+--- /dev/null
++++ b/docker-compose.yml
+@@ -0,0 +1,84 @@
++# =========================================================================
++# Kopie ‘«ˆ Docker Compose (d+Æveloppement)
++# Services : postgres, api, web-prof, web-eleve
++# =========================================================================
++
++services:
++  postgres:
++    image: postgres:16-alpine
++    container_name: kopie-postgres
++    environment:
++      POSTGRES_USER: ${POSTGRES_USER:-kopie}
++      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-kopie}
++      POSTGRES_DB: ${POSTGRES_DB:-kopie}
++    ports:
++      - "5432:5432"
++    volumes:
++      - pgdata:/var/lib/postgresql/data
++    healthcheck:
++      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-kopie} -d ${POSTGRES_DB:-kopie}"]
++      interval: 5s
++      timeout: 5s
++      retries: 10
++
++  api:
++    build:
++      context: ./apps/api
++      dockerfile: Dockerfile.dev
++    container_name: kopie-api
++    depends_on:
++      postgres:
++        condition: service_healthy
++    environment:
++      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-kopie}:${POSTGRES_PASSWORD:-kopie}@postgres:5432/${POSTGRES_DB:-kopie}
++      SECRET_KEY: ${SECRET_KEY:-changeme-generate-with-openssl-rand-hex-32}
++      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-15}
++      REFRESH_TOKEN_EXPIRE_DAYS: ${REFRESH_TOKEN_EXPIRE_DAYS:-7}
++      CORS_ORIGINS: '["http://localhost:5173","http://localhost:5174"]'
++      DATA_RETENTION_MONTHS: ${DATA_RETENTION_MONTHS:-12}
++    ports:
++      - "8000:8000"
++    volumes:
++      - ./apps/api/app:/app/app
++      - ./apps/api/alembic:/app/alembic
++      - ./apps/api/tests:/app/tests
++    healthcheck:
++      test: ["CMD", "curl", "-fsS", "http://localhost:8000/api/v1/health"]
++      interval: 10s
++      timeout: 3s
++      retries: 5
++      start_period: 15s
++
++  web-prof:
++    build:
++      context: .
++      dockerfile: ./apps/web-prof/Dockerfile.dev
++    container_name: kopie-web-prof
++    depends_on:
++      - api
++    environment:
++      VITE_API_URL: http://localhost:8000
++    ports:
++      - "5173:5173"
++    volumes:
++      - ./apps/web-prof/src:/app/apps/web-prof/src
++      - ./apps/web-prof/index.html:/app/apps/web-prof/index.html
++
++  web-eleve:
++    build:
++      context: .
++      dockerfile: ./apps/web-eleve/Dockerfile.dev
++    container_name: kopie-web-eleve
++    depends_on:
++      - api
++    environment:
++      VITE_API_URL: http://localhost:8000
++    ports:
++      - "5174:5174"
++    volumes:
++      - ./apps/web-eleve/src:/app/apps/web-eleve/src
++      - ./apps/web-eleve/index.html:/app/apps/web-eleve/index.html
++
++volumes:
++  pgdata:
++    name: kopie_pgdata
+diff --git a/docker-compose.prod.yml b/docker-compose.prod.yml
+new file mode 100644
+index 0000000..bcb607c
+--- /dev/null
++++ b/docker-compose.prod.yml
+@@ -0,0 +1,9 @@
++# =========================================================================
++# Kopie ‘«ˆ Production docker-compose (PLACEHOLDER)
++# Sera rempli en Story 6.1 (Docker Compose production complet) :
++#   - Images build multi-stage
++#   - Caddy reverse-proxy avec HTTPS automatique (Story 6.2)
++#   - Variables `.env` valid+Æes
++#   - Volumes nomm+Æs persistants
++#   - Politiques restart=always
++# =========================================================================
+diff --git a/Caddyfile b/Caddyfile
+new file mode 100644
+index 0000000..3f2d60b
+--- /dev/null
++++ b/Caddyfile
+@@ -0,0 +1,8 @@
++# =========================================================================
++# Kopie ‘«ˆ Caddyfile (PLACEHOLDER)
++# Sera rempli en Story 6.2 (HTTPS automatique avec Caddy) :
++#   - prof.kopie.cc ‘Â∆ service web-prof
++#   - eleve.kopie.cc ‘Â∆ service web-eleve
++#   - api.kopie.cc ‘Â∆ service api
++#   - TLS automatique Let's Encrypt
++# =========================================================================
+diff --git a/LICENSE b/LICENSE
+new file mode 100644
+index 0000000..be3f7b2
+--- /dev/null
++++ b/LICENSE
+@@ -0,0 +1,661 @@
++                    GNU AFFERO GENERAL PUBLIC LICENSE
++                       Version 3, 19 November 2007
++
++ Copyright (C) 2007 Free Software Foundation, Inc. <https://fsf.org/>
++ Everyone is permitted to copy and distribute verbatim copies
++ of this license document, but changing it is not allowed.
++
++                            Preamble
++
++  The GNU Affero General Public License is a free, copyleft license for
++software and other kinds of works, specifically designed to ensure
++cooperation with the community in the case of network server software.
++
++  The licenses for most software and other practical works are designed
++to take away your freedom to share and change the works.  By contrast,
++our General Public Licenses are intended to guarantee your freedom to
++share and change all versions of a program--to make sure it remains free
++software for all its users.
++
++  When we speak of free software, we are referring to freedom, not
++price.  Our General Public Licenses are designed to make sure that you
++have the freedom to distribute copies of free software (and charge for
++them if you wish), that you receive source code or can get it if you
++want it, that you can change the software or use pieces of it in new
++free programs, and that you know you can do these things.
++
++  Developers that use our General Public Licenses protect your rights
++with two steps: (1) assert copyright on the software, and (2) offer
++you this License which gives you legal permission to copy, distribute
++and/or modify the software.
++
++  A secondary benefit of defending all users' freedom is that
++improvements made in alternate versions of the program, if they
++receive widespread use, become available for other developers to
++incorporate.  Many developers of free software are heartened and
++encouraged by the resulting cooperation.  However, in the case of
++software used on network servers, this result may fail to come about.
++The GNU General Public License permits making a modified version and
++letting the public access it on a server without ever releasing its
++source code to the public.
++
++  The GNU Affero General Public License is designed specifically to
++ensure that, in such cases, the modified source code becomes available
++to the community.  It requires the operator of a network server to
++provide the source code of the modified version running there to the
++users of that server.  Therefore, public use of a modified version, on
++a publicly accessible server, gives the public access to the source
++code of the modified version.
++
++  An older license, called the Affero General Public License and
++published by Affero, was designed to accomplish similar goals.  This is
++a different license, not a version of the Affero GPL, but Affero has
++released a new version of the Affero GPL which permits relicensing under
++this license.
++
++  The precise terms and conditions for copying, distribution and
++modification follow.
++
++                       TERMS AND CONDITIONS
++
++  0. Definitions.
++
++  "This License" refers to version 3 of the GNU Affero General Public License.
++
++  "Copyright" also means copyright-like laws that apply to other kinds of
++works, such as semiconductor masks.
++
++  "The Program" refers to any copyrightable work licensed under this
++License.  Each licensee is addressed as "you".  "Licensees" and
++"recipients" may be individuals or organizations.
++
++  To "modify" a work means to copy from or adapt all or part of the work
++in a fashion requiring copyright permission, other than the making of an
++exact copy.  The resulting work is called a "modified version" of the
++earlier work or a work "based on" the earlier work.
++
++  A "covered work" means either the unmodified Program or a work based
++on the Program.
++
++  To "propagate" a work means to do anything with it that, without
++permission, would make you directly or secondarily liable for
++infringement under applicable copyright law, except executing it on a
++computer or modifying a private copy.  Propagation includes copying,
++distribution (with or without modification), making available to the
++public, and in some countries other activities as well.
++
++  To "convey" a work means any kind of propagation that enables other
++parties to make or receive copies.  Mere interaction with a user through
++a computer network, with no transfer of a copy, is not conveying.
++
++  An interactive user interface displays "Appropriate Legal Notices"
++to the extent that it includes a convenient and prominently visible
++feature that (1) displays an appropriate copyright notice, and (2)
++tells the user that there is no warranty for the work (except to the
++extent that warranties are provided), that licensees may convey the
++work under this License, and how to view a copy of this License.  If
++the interface presents a list of user commands or options, such as a
++menu, a prominent item in the list meets this criterion.
++
++  1. Source Code.
++
++  The "source code" for a work means the preferred form of the work
++for making modifications to it.  "Object code" means any non-source
++form of a work.
++
++  A "Standard Interface" means an interface that either is an official
++standard defined by a recognized standards body, or, in the case of
++interfaces specified for a particular programming language, one that
++is widely used among developers working in that language.
++
++  The "System Libraries" of an executable work include anything, other
++than the work as a whole, that (a) is included in the normal form of
++packaging a Major Component, but which is not part of that Major
++Component, and (b) serves only to enable use of the work with that
++Major Component, or to implement a Standard Interface for which an
++implementation is available to the public in source code form.  A
++"Major Component", in this context, means a major essential component
++(kernel, window system, and so on) of the specific operating system
++(if any) on which the executable work runs, or a compiler used to
++produce the work, or an object code interpreter used to run it.
++
++  The "Corresponding Source" for a work in object code form means all
++the source code needed to generate, install, and (for an executable
++work) run the object code and to modify the work, including scripts to
++control those activities.  However, it does not include the work's
++System Libraries, or general-purpose tools or generally available free
++programs which are used unmodified in performing those activities but
++which are not part of the work.  For example, Corresponding Source
++includes interface definition files associated with source files for
++the work, and the source code for shared libraries and dynamically
++linked subprograms that the work is specifically designed to require,
++such as by intimate data communication or control flow between those
++subprograms and other parts of the work.
++
++  The Corresponding Source need not include anything that users
++can regenerate automatically from other parts of the Corresponding
++Source.
++
++  The Corresponding Source for a work in source code form is that
++same work.
++
++  2. Basic Permissions.
++
++  All rights granted under this License are granted for the term of
++copyright on the Program, and are irrevocable provided the stated
++conditions are met.  This License explicitly affirms your unlimited
++permission to run the unmodified Program.  The output from running a
++covered work is covered by this License only if the output, given its
++content, constitutes a covered work.  This License acknowledges your
++rights of fair use or other equivalent, as provided by copyright law.
++
++  You may make, run and propagate covered works that you do not
++convey, without conditions so long as your license otherwise remains
++in force.  You may convey covered works to others for the sole purpose
++of having them make modifications exclusively for you, or provide you
++with facilities for running those works, provided that you comply with
++the terms of this License in conveying all material for which you do
++not control copyright.  Those thus making or running the covered works
++for you must do so exclusively on your behalf, under your direction
++and control, on terms that prohibit them from making any copies of
++your copyrighted material outside their relationship with you.
++
++  Conveying under any other circumstances is permitted solely under
++the conditions stated below.  Sublicensing is not allowed; section 10
++makes it unnecessary.
++
++  3. Protecting Users' Legal Rights From Anti-Circumvention Law.
++
++  No covered work shall be deemed part of an effective technological
++measure under any applicable law fulfilling obligations under article
++11 of the WIPO copyright treaty adopted on 20 December 1996, or
++similar laws prohibiting or restricting circumvention of such
++measures.
++
++  When you convey a covered work, you waive any legal power to forbid
++circumvention of technological measures to the extent such circumvention
++is effected by exercising rights under this License with respect to
++the covered work, and you disclaim any intention to limit operation or
++modification of the work as a means of enforcing, against the work's
++users, your or third parties' legal rights to forbid circumvention of
++technological measures.
++
++  4. Conveying Verbatim Copies.
++
++  You may convey verbatim copies of the Program's source code as you
++receive it, in any medium, provided that you conspicuously and
++appropriately publish on each copy an appropriate copyright notice;
++keep intact all notices stating that this License and any
++non-permissive terms added in accord with section 7 apply to the code;
++keep intact all notices of the absence of any warranty; and give all
++recipients a copy of this License along with the Program.
++
++  You may charge any price or no price for each copy that you convey,
++and you may offer support or warranty protection for a fee.
++
++  5. Conveying Modified Source Versions.
++
++  You may convey a work based on the Program, or the modifications to
++produce it from the Program, in the form of source code under the
++terms of section 4, provided that you also meet all of these conditions:
++
++    a) The work must carry prominent notices stating that you modified
++    it, and giving a relevant date.
++
++    b) The work must carry prominent notices stating that it is
++    released under this License and any conditions added under section
++    7.  This requirement modifies the requirement in section 4 to
++    "keep intact all notices".
++
++    c) You must license the entire work, as a whole, under this
++    License to anyone who comes into possession of a copy.  This
++    License will therefore apply, along with any applicable section 7
++    additional terms, to the whole of the work, and all its parts,
++    regardless of how they are packaged.  This License gives no
++    permission to license the work in any other way, but it does not
++    invalidate such permission if you have separately received it.
++
++    d) If the work has interactive user interfaces, each must display
++    Appropriate Legal Notices; however, if the Program has interactive
++    interfaces that do not display Appropriate Legal Notices, your
++    work need not make them do so.
++
++  A compilation of a covered work with other separate and independent
++works, which are not by their nature extensions of the covered work,
++and which are not combined with it such as to form a larger program,
++in or on a volume of a storage or distribution medium, is called an
++"aggregate" if the compilation and its resulting copyright are not
++used to limit the access or legal rights of the compilation's users
++beyond what the individual works permit.  Inclusion of a covered work
++in an aggregate does not cause this License to apply to the other
++parts of the aggregate.
++
++  6. Conveying Non-Source Forms.
++
++  You may convey a covered work in object code form under the terms
++of sections 4 and 5, provided that you also convey the
++machine-readable Corresponding Source under the terms of this License,
++in one of these ways:
++
++    a) Convey the object code in, or embodied in, a physical product
++    (including a physical distribution medium), accompanied by the
++    Corresponding Source fixed on a durable physical medium
++    customarily used for software interchange.
++
++    b) Convey the object code in, or embodied in, a physical product
++    (including a physical distribution medium), accompanied by a
++    written offer, valid for at least three years and valid for as
++    long as you offer spare parts or customer support for that product
++    model, to give anyone who possesses the object code either (1) a
++    copy of the Corresponding Source for all the software in the
++    product that is covered by this License, on a durable physical
++    medium customarily used for software interchange, for a price no
++    more than your reasonable cost of physically performing this
++    conveying of source, or (2) access to copy the
++    Corresponding Source from a network server at no charge.
++
++    c) Convey individual copies of the object code with a copy of the
++    written offer to provide the Corresponding Source.  This
++    alternative is allowed only occasionally and noncommercially, and
++    only if you received the object code with such an offer, in accord
++    with subsection 6b.
++
++    d) Convey the object code by offering access from a designated
++    place (gratis or for a charge), and offer equivalent access to the
++    Corresponding Source in the same way through the same place at no
++    further charge.  You need not require recipients to copy the
++    Corresponding Source along with the object code.  If the place to
++    copy the object code is a network server, the Corresponding Source
++    may be on a different server (operated by you or a third party)
++    that supports equivalent copying facilities, provided you maintain
++    clear directions next to the object code saying where to find the
++    Corresponding Source.  Regardless of what server hosts the
++    Corresponding Source, you remain obligated to ensure that it is
++    available for as long as needed to satisfy these requirements.
++
++    e) Convey the object code using peer-to-peer transmission, provided
++    you inform other peers where the object code and Corresponding
++    Source of the work are being offered to the general public at no
++    charge under subsection 6d.
++
++  A separable portion of the object code, whose source code is excluded
++from the Corresponding Source as a System Library, need not be
++included in conveying the object code work.
++
++  A "User Product" is either (1) a "consumer product", which means any
++tangible personal property which is normally used for personal, family,
++or household purposes, or (2) anything designed or sold for incorporation
++into a dwelling.  In determining whether a product is a consumer product,
++doubtful cases shall be resolved in favor of coverage.  For a particular
++product received by a particular user, "normally used" refers to a
++typical or common use of that class of product, regardless of the status
++of the particular user or of the way in which the particular user
++actually uses, or expects or is expected to use, the product.  A product
++is a consumer product regardless of whether the product has substantial
++commercial, industrial or non-consumer uses, unless such uses represent
++the only significant mode of use of the product.
++
++  "Installation Information" for a User Product means any methods,
++procedures, authorization keys, or other information required to install
++and execute modified versions of a covered work in that User Product from
++a modified version of its Corresponding Source.  The information must
++suffice to ensure that the continued functioning of the modified object
++code is in no case prevented or interfered with solely because
++modification has been made.
++
++  If you convey an object code work under this section in, or with, or
++specifically for use in, a User Product, and the conveying occurs as
++part of a transaction in which the right of possession and use of the
++User Product is transferred to the recipient in perpetuity or for a
++fixed term (regardless of how the transaction is characterized), the
++Corresponding Source conveyed under this section must be accompanied
++by the Installation Information.  But this requirement does not apply
++if neither you nor any third party retains the ability to install
++modified object code on the User Product (for example, the work has
++been installed in ROM).
++
++  The requirement to provide Installation Information does not include a
++requirement to continue to provide support service, warranty, or updates
++for a work that has been modified or installed by the recipient, or for
++the User Product in which it has been modified or installed.  Access to a
++network may be denied when the modification itself materially and
++adversely affects the operation of the network or violates the rules and
++protocols for communication across the network.
++
++  Corresponding Source conveyed, and Installation Information provided,
++in accord with this section must be in a format that is publicly
++documented (and with an implementation available to the public in
++source code form), and must require no special password or key for
++unpacking, reading or copying.
++
++  7. Additional Terms.
++
++  "Additional permissions" are terms that supplement the terms of this
++License by making exceptions from one or more of its conditions.
++Additional permissions that are applicable to the entire Program shall
++be treated as though they were included in this License, to the extent
++that they are valid under applicable law.  If additional permissions
++apply only to part of the Program, that part may be used separately
++under those permissions, but the entire Program remains governed by
++this License without regard to the additional permissions.
++
++  When you convey a copy of a covered work, you may at your option
++remove any additional permissions from that copy, or from any part of
++it.  (Additional permissions may be written to require their own
++removal in certain cases when you modify the work.)  You may place
++additional permissions on material, added by you to a covered work,
++for which you have or can give appropriate copyright permission.
++
++  Notwithstanding any other provision of this License, for material you
++add to a covered work, you may (if authorized by the copyright holders of
++that material) supplement the terms of this License with terms:
++
++    a) Disclaiming warranty or limiting liability differently from the
++    terms of sections 15 and 16 of this License; or
++
++    b) Requiring preservation of specified reasonable legal notices or
++    author attributions in that material or in the Appropriate Legal
++    Notices displayed by works containing it; or
++
++    c) Prohibiting misrepresentation of the origin of that material, or
++    requiring that modified versions of such material be marked in
++    reasonable ways as different from the original version; or
++
++    d) Limiting the use for publicity purposes of names of licensors or
++    authors of the material; or
++
++    e) Declining to grant rights under trademark law for use of some
++    trade names, trademarks, or service marks; or
++
++    f) Requiring indemnification of licensors and authors of that
++    material by anyone who conveys the material (or modified versions of
++    it) with contractual assumptions of liability to the recipient, for
++    any liability that these contractual assumptions directly impose on
++    those licensors and authors.
++
++  All other non-permissive additional terms are considered "further
++restrictions" within the meaning of section 10.  If the Program as you
++received it, or any part of it, contains a notice stating that it is
++governed by this License along with a term that is a further
++restriction, you may remove that term.  If a license document contains
++a further restriction but permits relicensing or conveying under this
++License, you may add to a covered work material governed by the terms
++of that license document, provided that the further restriction does
++not survive such relicensing or conveying.
++
++  If you add terms to a covered work in accord with this section, you
++must place, in the relevant source files, a statement of the
++additional terms that apply to those files, or a notice indicating
++where to find the applicable terms.
++
++  Additional terms, permissive or non-permissive, may be stated in the
++form of a separately written license, or stated as exceptions;
++the above requirements apply either way.
++
++  8. Termination.
++
++  You may not propagate or modify a covered work except as expressly
++provided under this License.  Any attempt otherwise to propagate or
++modify it is void, and will automatically terminate your rights under
++this License (including any patent licenses granted under the third
++paragraph of section 11).
++
++  However, if you cease all violation of this License, then your
++license from a particular copyright holder is reinstated (a)
++provisionally, unless and until the copyright holder explicitly and
++finally terminates your license, and (b) permanently, if the copyright
++holder fails to notify you of the violation by some reasonable means
++prior to 60 days after the cessation.
++
++  Moreover, your license from a particular copyright holder is
++reinstated permanently if the copyright holder notifies you of the
++violation by some reasonable means, this is the first time you have
++received notice of violation of this License (for any work) from that
++copyright holder, and you cure the violation prior to 30 days after
++your receipt of the notice.
++
++  Termination of your rights under this section does not terminate the
++licenses of parties who have received copies or rights from you under
++this License.  If your rights have been terminated and not permanently
++reinstated, you do not qualify to receive new licenses for the same
++material under section 10.
++
++  9. Acceptance Not Required for Having Copies.
++
++  You are not required to accept this License in order to receive or
++run a copy of the Program.  Ancillary propagation of a covered work
++occurring solely as a consequence of using peer-to-peer transmission
++to receive a copy likewise does not require acceptance.  However,
++nothing other than this License grants you permission to propagate or
++modify any covered work.  These actions infringe copyright if you do
++not accept this License.  Therefore, by modifying or propagating a
++covered work, you indicate your acceptance of this License to do so.
++
++  10. Automatic Licensing of Downstream Recipients.
++
++  Each time you convey a covered work, the recipient automatically
++receives a license from the original licensors, to run, modify and
++propagate that work, subject to this License.  You are not responsible
++for enforcing compliance by third parties with this License.
++
++  An "entity transaction" is a transaction transferring control of an
++organization, or substantially all assets of one, or subdividing an
++organization, or merging organizations.  If propagation of a covered
++work results from an entity transaction, each party to that
++transaction who receives a copy of the work also receives whatever
++licenses to the work the party's predecessor in interest had or could
++give under the previous paragraph, plus a right to possession of the
++Corresponding Source of the work from the predecessor in interest, if
++the predecessor has it or can get it with reasonable efforts.
++
++  You may not impose any further restrictions on the exercise of the
++rights granted or affirmed under this License.  For example, you may
++not impose a license fee, royalty, or other charge for exercise of
++rights granted under this License, and you may not initiate litigation
++(including a cross-claim or counterclaim in a lawsuit) alleging that
++any patent claim is infringed by making, using, selling, offering for
++sale, or importing the Program or any portion of it.
++
++  11. Patents.
++
++  A "contributor" is a copyright holder who authorizes use under this
++License of the Program or a work on which the Program is based.  The
++work thus licensed is called the contributor's "contributor version".
++
++  A contributor's "essential patent claims" are all patent claims
++owned or controlled by the contributor, whether already acquired or
++hereafter acquired, that would be infringed by some manner, permitted
++by this License, of making, using, or selling its contributor version,
++but do not include claims that would be infringed only as a
++consequence of further modification of the contributor version.  For
++purposes of this definition, "control" includes the right to grant
++patent sublicenses in a manner consistent with the requirements of
++this License.
++
++  Each contributor grants you a non-exclusive, worldwide, royalty-free
++patent license under the contributor's essential patent claims, to
++make, use, sell, offer for sale, import and otherwise run, modify and
++propagate the contents of its contributor version.
++
++  In the following three paragraphs, a "patent license" is any express
++agreement or commitment, however denominated, not to enforce a patent
++(such as an express permission to practice a patent or covenant not to
++sue for patent infringement).  To "grant" such a patent license to a
++party means to make such an agreement or commitment not to enforce a
++patent against the party.
++
++  If you convey a covered work, knowingly relying on a patent license,
++and the Corresponding Source of the work is not available for anyone
++to copy, free of charge and under the terms of this License, through a
++publicly available network server or other readily accessible means,
++then you must either (1) cause the Corresponding Source to be so
++available, or (2) arrange to deprive yourself of the benefit of the
++patent license for this particular work, or (3) arrange, in a manner
++consistent with the requirements of this License, to extend the patent
++license to downstream recipients.  "Knowingly relying" means you have
++actual knowledge that, but for the patent license, your conveying the
++covered work in a country, or your recipient's use of the covered work
++in a country, would infringe one or more identifiable patents in that
++country that you have reason to believe are valid.
++
++  If, pursuant to or in connection with a single transaction or
++arrangement, you convey, or propagate by procuring conveyance of, a
++covered work, and grant a patent license to some of the parties
++receiving the covered work authorizing them to use, propagate, modify
++or convey a specific copy of the covered work, then the patent license
++you grant is automatically extended to all recipients of the covered
++work and works based on it.
++
++  A patent license is "discriminatory" if it does not include within
++the scope of its coverage, prohibits the exercise of, or is
++conditioned on the non-exercise of one or more of the rights that are
++specifically granted under this License.  You may not convey a covered
++work if you are a party to an arrangement with a third party that is
++in the business of distributing software, under which you make payment
++to the third party based on the extent of your activity of conveying
++the work, and under which the third party grants, to any of the
++parties who would receive the covered work from you, a discriminatory
++patent license (a) in connection with copies of the covered work
++conveyed by you (or copies made from those copies), or (b) primarily
++for and in connection with specific products or compilations that
++contain the covered work, unless you entered into that arrangement,
++or that patent license was granted, prior to 28 March 2007.
++
++  Nothing in this License shall be construed as excluding or limiting
++any implied license or other defenses to infringement that may
++otherwise be available to you under applicable patent law.
++
++  12. No Surrender of Others' Freedom.
++
++  If conditions are imposed on you (whether by court order, agreement or
++otherwise) that contradict the conditions of this License, they do not
++excuse you from the conditions of this License.  If you cannot convey a
++covered work so as to satisfy simultaneously your obligations under this
++License and any other pertinent obligations, then as a consequence you may
++not convey it at all.  For example, if you agree to terms that obligate you
++to collect a royalty for further conveying from those to whom you convey
++the Program, the only way you could satisfy both those terms and this
++License would be to refrain entirely from conveying the Program.
++
++  13. Remote Network Interaction; Use with the GNU General Public License.
++
++  Notwithstanding any other provision of this License, if you modify the
++Program, your modified version must prominently offer all users
++interacting with it remotely through a computer network (if your version
++supports such interaction) an opportunity to receive the Corresponding
++Source of your version by providing access to the Corresponding Source
++from a network server at no charge, through some standard or customary
++means of facilitating copying of software.  This Corresponding Source
++shall include the Corresponding Source for any work covered by version 3
++of the GNU General Public License that is incorporated pursuant to the
++following paragraph.
++
++  Notwithstanding any other provision of this License, you have
++permission to link or combine any covered work with a work licensed
++under version 3 of the GNU General Public License into a single
++combined work, and to convey the resulting work.  The terms of this
++License will continue to apply to the part which is the covered work,
++but the work with which it is combined will remain governed by version
++3 of the GNU General Public License.
++
++  14. Revised Versions of this License.
++
++  The Free Software Foundation may publish revised and/or new versions of
++the GNU Affero General Public License from time to time.  Such new versions
++will be similar in spirit to the present version, but may differ in detail to
++address new problems or concerns.
++
++  Each version is given a distinguishing version number.  If the
++Program specifies that a certain numbered version of the GNU Affero General
++Public License "or any later version" applies to it, you have the
++option of following the terms and conditions either of that numbered
++version or of any later version published by the Free Software
++Foundation.  If the Program does not specify a version number of the
++GNU Affero General Public License, you may choose any version ever published
++by the Free Software Foundation.
++
++  If the Program specifies that a proxy can decide which future
++versions of the GNU Affero General Public License can be used, that proxy's
++public statement of acceptance of a version permanently authorizes you
++to choose that version for the Program.
++
++  Later license versions may give you additional or different
++permissions.  However, no additional obligations are imposed on any
++author or copyright holder as a result of your choosing to follow a
++later version.
++
++  15. Disclaimer of Warranty.
++
++  THERE IS NO WARRANTY FOR THE PROGRAM, TO THE EXTENT PERMITTED BY
++APPLICABLE LAW.  EXCEPT WHEN OTHERWISE STATED IN WRITING THE COPYRIGHT
++HOLDERS AND/OR OTHER PARTIES PROVIDE THE PROGRAM "AS IS" WITHOUT WARRANTY
++OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO,
++THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++PURPOSE.  THE ENTIRE RISK AS TO THE QUALITY AND PERFORMANCE OF THE PROGRAM
++IS WITH YOU.  SHOULD THE PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF
++ALL NECESSARY SERVICING, REPAIR OR CORRECTION.
++
++  16. Limitation of Liability.
++
++  IN NO EVENT UNLESS REQUIRED BY APPLICABLE LAW OR AGREED TO IN WRITING
++WILL ANY COPYRIGHT HOLDER, OR ANY OTHER PARTY WHO MODIFIES AND/OR CONVEYS
++THE PROGRAM AS PERMITTED ABOVE, BE LIABLE TO YOU FOR DAMAGES, INCLUDING ANY
++GENERAL, SPECIAL, INCIDENTAL OR CONSEQUENTIAL DAMAGES ARISING OUT OF THE
++USE OR INABILITY TO USE THE PROGRAM (INCLUDING BUT NOT LIMITED TO LOSS OF
++DATA OR DATA BEING RENDERED INACCURATE OR LOSSES SUSTAINED BY YOU OR THIRD
++PARTIES OR A FAILURE OF THE PROGRAM TO OPERATE WITH ANY OTHER PROGRAMS),
++EVEN IF SUCH HOLDER OR OTHER PARTY HAS BEEN ADVISED OF THE POSSIBILITY OF
++SUCH DAMAGES.
++
++  17. Interpretation of Sections 15 and 16.
++
++  If the disclaimer of warranty and limitation of liability provided
++above cannot be given local legal effect according to their terms,
++reviewing courts shall apply local law that most closely approximates
++an absolute waiver of all civil liability in connection with the
++Program, unless a warranty or assumption of liability accompanies a
++copy of the Program in return for a fee.
++
++                     END OF TERMS AND CONDITIONS
++
++            How to Apply These Terms to Your New Programs
++
++  If you develop a new program, and you want it to be of the greatest
++possible use to the public, the best way to achieve this is to make it
++free software which everyone can redistribute and change under these terms.
++
++  To do so, attach the following notices to the program.  It is safest
++to attach them to the start of each source file to most effectively
++state the exclusion of warranty; and each file should have at least
++the "copyright" line and a pointer to where the full notice is found.
++
++    <one line to give the program's name and a brief idea of what it does.>
++    Copyright (C) <year>  <name of author>
++
++    This program is free software: you can redistribute it and/or modify
++    it under the terms of the GNU Affero General Public License as published by
++    the Free Software Foundation, either version 3 of the License, or
++    (at your option) any later version.
++
++    This program is distributed in the hope that it will be useful,
++    but WITHOUT ANY WARRANTY; without even the implied warranty of
++    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++    GNU Affero General Public License for more details.
++
++    You should have received a copy of the GNU Affero General Public License
++    along with this program.  If not, see <https://www.gnu.org/licenses/>.
++
++Also add information on how to contact you by electronic and paper mail.
++
++  If your software can interact with users remotely through a computer
++network, you should also make sure that it provides a way for users to
++get its source.  For example, if your program is a web application, its
++interface could display a "Source" link that leads users to an archive
++of the code.  There are many ways you could offer source, and different
++solutions will be better for different programs; see section 13 for the
++specific requirements.
++
++  You should also get your employer (if you work as a programmer) or school,
++if any, to sign a "copyright disclaimer" for the program, if necessary.
++For more information on this, and how to apply and follow the GNU AGPL, see
++<https://www.gnu.org/licenses/>.
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+new file mode 100644
+index 0000000..ada0bb3
+--- /dev/null
++++ b/.github/workflows/ci.yml
+@@ -0,0 +1,93 @@
++name: CI
++
++on:
++  push:
++    branches: [main]
++  pull_request:
++    branches: [main]
++
++jobs:
++  lint-api:
++    name: API ‘«ˆ Lint (ruff + mypy)
++    runs-on: ubuntu-latest
++    defaults:
++      run:
++        working-directory: apps/api
++    steps:
++      - uses: actions/checkout@v4
++      - name: Install uv
++        uses: astral-sh/setup-uv@v3
++      - name: Set up Python
++        run: uv python install 3.12
++      - name: Install dependencies
++        run: uv sync --all-extras
++      - name: Ruff
++        run: uv run ruff check .
++      - name: Mypy
++        run: uv run mypy app
++
++  test-api:
++    name: API ‘«ˆ Tests (pytest)
++    runs-on: ubuntu-latest
++    defaults:
++      run:
++        working-directory: apps/api
++    steps:
++      - uses: actions/checkout@v4
++      - name: Install uv
++        uses: astral-sh/setup-uv@v3
++      - name: Set up Python
++        run: uv python install 3.12
++      - name: Install dependencies
++        run: uv sync --all-extras
++      - name: Pytest
++        run: uv run pytest -q
++
++  lint-front:
++    name: Front ‘«ˆ Lint (eslint)
++    runs-on: ubuntu-latest
++    steps:
++      - uses: actions/checkout@v4
++      - uses: pnpm/action-setup@v4
++        with:
++          version: 10
++      - uses: actions/setup-node@v4
++        with:
++          node-version: '22'
++          cache: 'pnpm'
++      - run: pnpm install --frozen-lockfile=false
++      - run: pnpm --filter web-prof lint
++      - run: pnpm --filter web-eleve lint
++
++  test-front:
++    name: Front ‘«ˆ Tests (vitest)
++    runs-on: ubuntu-latest
++    steps:
++      - uses: actions/checkout@v4
++      - uses: pnpm/action-setup@v4
++        with:
++          version: 10
++      - uses: actions/setup-node@v4
++        with:
++          node-version: '22'
++          cache: 'pnpm'
++      - run: pnpm install --frozen-lockfile=false
++      - run: pnpm --filter web-prof test
++      - run: pnpm --filter web-eleve test
++
++  build:
++    name: Build front
++    runs-on: ubuntu-latest
++    needs: [lint-front, test-front]
++    steps:
++      - uses: actions/checkout@v4
++      - uses: pnpm/action-setup@v4
++        with:
++          version: 10
++      - uses: actions/setup-node@v4
++        with:
++          node-version: '22'
++          cache: 'pnpm'
++      - run: pnpm install --frozen-lockfile=false
++      - run: pnpm --filter web-prof build
++      - run: pnpm --filter web-eleve build
+diff --git a/contracts/openapi.yaml b/contracts/openapi.yaml
+new file mode 100644
+index 0000000..4d98ecf
+--- /dev/null
++++ b/contracts/openapi.yaml
+@@ -0,0 +1,59 @@
++openapi: "3.1.0"
++info:
++  title: Kopie API
++  version: "0.1.0"
++  description: |
++    Plateforme d'+Ævaluation s+Æcuris+Æe ‘«ˆ API REST.
++    Contrat versionn+Æ. Types front g+Æn+Ær+Æs via openapi-typescript ‘Â∆ @kopie/shared-types.
++  license:
++    name: AGPL-3.0-only
++    identifier: AGPL-3.0-only
++
++servers:
++  - url: http://localhost:8000
++    description: D+Æveloppement local
++  - url: https://api.kopie.cc
++    description: Production
++
++paths:
++  /api/v1/health:
++    get:
++      operationId: getHealth
++      summary: Health check
++      description: V+Ærifie l'op+Ærabilit+Æ de l'API.
++      tags: [system]
++      responses:
++        "200":
++          description: Service op+Ærationnel
++          content:
++            application/json:
++              schema:
++                type: object
++                required: [status]
++                properties:
++                  status:
++                    type: string
++                    example: "ok"
++
++components:
++  schemas:
++    Error:
++      type: object
++      required: [error]
++      properties:
++        error:
++          type: object
++          required: [code, message]
++          properties:
++            code:
++              type: string
++              description: Code erreur SCREAMING_SNAKE (ex. ACCESS_EXPIRED)
++              example: ACCESS_EXPIRED
++            message:
++              type: string
++              description: Message lisible c+¶t+Æ client
++              example: L'acc+øs a expir+Æ.
++            details:
++              type: object
++              additionalProperties: true
++              description: D+Ætails optionnels (champ, contraintes, etc.)
+diff --git a/scripts/gen-types.sh b/scripts/gen-types.sh
+new file mode 100644
+index 0000000..591f205
+--- /dev/null
++++ b/scripts/gen-types.sh
+@@ -0,0 +1,18 @@
++#!/usr/bin/env bash
++# =========================================================================
++# Kopie ‘«ˆ G+Æn+Æration des types TypeScript depuis contracts/openapi.yaml
++# PLACEHOLDER (Story 1.2 : Contrat OpenAPI initial et types partag+Æs)
++#
++# Impl+Æmentation cible (Story 1.2) :
++#   pnpm dlx openapi-typescript contracts/openapi.yaml \
++#     -o packages/shared-types/src/api.ts
++#   pnpm --filter @kopie/shared-types build
++#
++# ‘‹·¥©≈ Ne PAS +Æditer packages/shared-types/ manuellement ‘«ˆ c'est un artefact
++# g+Æn+Ær+Æ, qui doit rester en synchro avec contracts/openapi.yaml.
++# =========================================================================
++
++set -euo pipefail
++
++echo "[gen-types] Placeholder ‘«ˆ impl+Æmentation pr+Ævue en Story 1.2"
++exit 0
+diff --git a/scripts/migrate.sh b/scripts/migrate.sh
+new file mode 100644
+index 0000000..60da9a5
+--- /dev/null
++++ b/scripts/migrate.sh
+@@ -0,0 +1,13 @@
++#!/usr/bin/env bash
++# =========================================================================
++# Kopie ‘«ˆ Migrations versionn+Æes
++# PLACEHOLDER (Story 6.3 : Migrations de base de donn+Æes versionn+Æes)
++#
++# Impl+Æmentation cible (Story 6.3) :
++#   cd apps/api && uv run alembic upgrade head
++# =========================================================================
++
++set -euo pipefail
++
++echo "[migrate] Placeholder ‘«ˆ impl+Æmentation pr+Ævue en Story 6.3"
++exit 0
+diff --git a/packages/shared-types/package.json b/packages/shared-types/package.json
+new file mode 100644
+index 0000000..aa79863
+--- /dev/null
++++ b/packages/shared-types/package.json
+@@ -0,0 +1,14 @@
++{
++  "name": "@kopie/shared-types",
++  "version": "0.1.0",
++  "private": true,
++  "type": "module",
++  "main": "./index.ts",
++  "types": "./index.ts",
++  "exports": {
++    ".": "./index.ts"
++  },
++  "scripts": {
++    "generate": "echo 'Generation d+Æl+Ægu+Æe +· scripts/gen-types.sh ‘«ˆ Story 1.2'"
++  }
++}
+diff --git a/packages/shared-types/index.ts b/packages/shared-types/index.ts
+new file mode 100644
+index 0000000..9f883ec
+--- /dev/null
++++ b/packages/shared-types/index.ts
+@@ -0,0 +1,9 @@
++// =========================================================================
++// @kopie/shared-types ‘«ˆ Types TypeScript partag+Æs (front-prof + front-eleve)
++//
++// ‘‹·¥©≈ FICHIER G+ÎN+ÎR+Î ‘«ˆ NE PAS +ÎDITER +« LA MAIN
++// Ce fichier sera g+Æn+Ær+Æ par scripts/gen-types.sh depuis contracts/openapi.yaml
++// (Story 1.2). Pour l'instant : export vide.
++// =========================================================================
++
++export {}
+diff --git a/packages/shared-types/README.md b/packages/shared-types/README.md
+new file mode 100644
+index 0000000..9b2487b
+--- /dev/null
++++ b/packages/shared-types/README.md
+@@ -0,0 +1,11 @@
++# @kopie/shared-types
++
++Types TypeScript partag+Æs entre `web-prof` et `web-eleve`, **g+Æn+Ær+Æs** depuis `contracts/openapi.yaml`.
++
++> ‘‹·¥©≈ **Ne JAMAIS +Æditer manuellement.** Toute modification doit passer par le contrat OpenAPI puis `scripts/gen-types.sh` (Story 1.2).
++
++## G+Æn+Æration (Story 1.2)
++
++```bash
++pnpm dlx openapi-typescript ../../contracts/openapi.yaml -o src/api.ts
++```
+diff --git a/packages/shared-types/tsconfig.json b/packages/shared-types/tsconfig.json
+new file mode 100644
+index 0000000..61bd2c7
+--- /dev/null
++++ b/packages/shared-types/tsconfig.json
+@@ -0,0 +1,14 @@
++{
++  "compilerOptions": {
++    "target": "ES2022",
++    "module": "ESNext",
++    "moduleResolution": "bundler",
++    "strict": true,
++    "skipLibCheck": true,
++    "esModuleInterop": true,
++    "isolatedModules": true,
++    "declaration": true,
++    "noEmit": true
++  },
++  "include": ["index.ts"]
++}

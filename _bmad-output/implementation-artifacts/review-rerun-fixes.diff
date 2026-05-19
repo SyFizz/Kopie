@@ -1,0 +1,391 @@
+
+diff --git a/docker-compose.yml b/docker-compose.yml
+new file mode 100644
+index 0000000..74ecf7c
+--- /dev/null
++++ b/docker-compose.yml
+@@ -0,0 +1,87 @@
++# =========================================================================
++# Kopie ÔÇö Docker Compose (d+®veloppement)
++# Services : postgres, api, web-prof, web-eleve
++# =========================================================================
++
++services:
++  postgres:
++    image: postgres:16-alpine
++    container_name: kopie-postgres
++    environment:
++      POSTGRES_USER: ${POSTGRES_USER:-kopie}
++      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-kopie}
++      POSTGRES_DB: ${POSTGRES_DB:-kopie}
++    ports:
++      - "5432:5432"
++    volumes:
++      - pgdata:/var/lib/postgresql/data
++    healthcheck:
++      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-kopie} -d ${POSTGRES_DB:-kopie}"]
++      interval: 5s
++      timeout: 5s
++      retries: 10
++
++  api:
++    build:
++      context: ./apps/api
++      dockerfile: Dockerfile.dev
++    container_name: kopie-api
++    depends_on:
++      postgres:
++        condition: service_healthy
++    environment:
++      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-kopie}:${POSTGRES_PASSWORD:-kopie}@postgres:5432/${POSTGRES_DB:-kopie}
++      # SECRET_KEY DOIT +¬tre d+®fini dans .env (g+®n+®r+® via `openssl rand -hex 32`).
++      # Pas de valeur par d+®faut : `docker compose up` +®choue volontairement si absent (NFR-4, FR-43).
++      SECRET_KEY: "${SECRET_KEY:?SECRET_KEY must be defined in .env - generate with openssl rand -hex 32}"
++      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-15}
++      REFRESH_TOKEN_EXPIRE_DAYS: ${REFRESH_TOKEN_EXPIRE_DAYS:-7}
++      # CORS pilot+® par .env ; d+®faut = dev local. +Ç red+®finir pour staging/prod.
++      CORS_ORIGINS: '${CORS_ORIGINS:-["http://localhost:5173","http://localhost:5174"]}'
++      DATA_RETENTION_MONTHS: ${DATA_RETENTION_MONTHS:-12}
++    ports:
++      - "8000:8000"
++    volumes:
++      - ./apps/api/app:/app/app
++      - ./apps/api/alembic:/app/alembic
++      - ./apps/api/tests:/app/tests
++    healthcheck:
++      test: ["CMD", "curl", "-fsS", "http://localhost:8000/api/v1/health"]
++      interval: 10s
++      timeout: 3s
++      retries: 5
++      start_period: 15s
++
++  web-prof:
++    build:
++      context: .
++      dockerfile: ./apps/web-prof/Dockerfile.dev
++    container_name: kopie-web-prof
++    depends_on:
++      - api
++    environment:
++      VITE_API_URL: http://localhost:8000
++    ports:
++      - "5173:5173"
++    volumes:
++      - ./apps/web-prof/src:/app/apps/web-prof/src
++      - ./apps/web-prof/index.html:/app/apps/web-prof/index.html
++
++  web-eleve:
++    build:
++      context: .
++      dockerfile: ./apps/web-eleve/Dockerfile.dev
++    container_name: kopie-web-eleve
++    depends_on:
++      - api
++    environment:
++      VITE_API_URL: http://localhost:8000
++    ports:
++      - "5174:5174"
++    volumes:
++      - ./apps/web-eleve/src:/app/apps/web-eleve/src
++      - ./apps/web-eleve/index.html:/app/apps/web-eleve/index.html
++
++volumes:
++  pgdata:
++    name: kopie_pgdata
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+new file mode 100644
+index 0000000..632f111
+--- /dev/null
++++ b/.github/workflows/ci.yml
+@@ -0,0 +1,93 @@
++name: CI
++
++on:
++  push:
++    branches: [main]
++  pull_request:
++    branches: [main]
++
++jobs:
++  lint-api:
++    name: API ÔÇö Lint (ruff + mypy)
++    runs-on: ubuntu-latest
++    defaults:
++      run:
++        working-directory: apps/api
++    steps:
++      - uses: actions/checkout@v4
++      - name: Install uv
++        uses: astral-sh/setup-uv@v3
++      - name: Set up Python
++        run: uv python install 3.12
++      - name: Install dependencies
++        run: uv sync --all-extras
++      - name: Ruff
++        run: uv run ruff check .
++      - name: Mypy
++        run: uv run mypy app
++
++  test-api:
++    name: API ÔÇö Tests (pytest)
++    runs-on: ubuntu-latest
++    defaults:
++      run:
++        working-directory: apps/api
++    steps:
++      - uses: actions/checkout@v4
++      - name: Install uv
++        uses: astral-sh/setup-uv@v3
++      - name: Set up Python
++        run: uv python install 3.12
++      - name: Install dependencies
++        run: uv sync --all-extras
++      - name: Pytest
++        run: uv run pytest -q
++
++  lint-front:
++    name: Front ÔÇö Lint (eslint)
++    runs-on: ubuntu-latest
++    steps:
++      - uses: actions/checkout@v4
++      - uses: pnpm/action-setup@v4
++        with:
++          version: 10
++      - uses: actions/setup-node@v4
++        with:
++          node-version-file: '.nvmrc'
++          cache: 'pnpm'
++      - run: pnpm install --frozen-lockfile
++      - run: pnpm --filter web-prof lint
++      - run: pnpm --filter web-eleve lint
++
++  test-front:
++    name: Front ÔÇö Tests (vitest)
++    runs-on: ubuntu-latest
++    steps:
++      - uses: actions/checkout@v4
++      - uses: pnpm/action-setup@v4
++        with:
++          version: 10
++      - uses: actions/setup-node@v4
++        with:
++          node-version-file: '.nvmrc'
++          cache: 'pnpm'
++      - run: pnpm install --frozen-lockfile
++      - run: pnpm --filter web-prof test
++      - run: pnpm --filter web-eleve test
++
++  build:
++    name: Build front
++    runs-on: ubuntu-latest
++    needs: [lint-front, test-front]
++    steps:
++      - uses: actions/checkout@v4
++      - uses: pnpm/action-setup@v4
++        with:
++          version: 10
++      - uses: actions/setup-node@v4
++        with:
++          node-version-file: '.nvmrc'
++          cache: 'pnpm'
++      - run: pnpm install --frozen-lockfile
++      - run: pnpm --filter web-prof build
++      - run: pnpm --filter web-eleve build
+diff --git a/package.json b/package.json
+new file mode 100644
+index 0000000..71f0deb
+--- /dev/null
++++ b/package.json
+@@ -0,0 +1,19 @@
++{
++  "name": "kopie",
++  "version": "0.1.0",
++  "private": true,
++  "description": "Kopie ÔÇö Plateforme d'+®valuation s+®curis+®e (monorepo)",
++  "license": "AGPL-3.0-only",
++  "engines": {
++    "node": ">=22.12.0 <23.0.0",
++    "pnpm": ">=10"
++  },
++  "scripts": {
++    "dev:prof": "pnpm --filter web-prof dev",
++    "dev:eleve": "pnpm --filter web-eleve dev",
++    "build": "pnpm -r build",
++    "test": "pnpm -r test",
++    "lint": "pnpm -r lint"
++  },
++  "packageManager": "pnpm@10.33.4"
++}
+diff --git a/.env.example b/.env.example
+new file mode 100644
+index 0000000..f152be2
+--- /dev/null
++++ b/.env.example
+@@ -0,0 +1,38 @@
++# =========================================================================
++# Kopie ÔÇö Variables d'environnement
++# Copier en `.env` et adapter pour le d+®veloppement local.
++# Ne JAMAIS commiter `.env` (NFR-4).
++# =========================================================================
++
++# --- Base de donn+®es ----------------------------------------------------
++DATABASE_URL=postgresql+asyncpg://kopie:kopie@localhost:5432/kopie
++POSTGRES_USER=kopie
++POSTGRES_PASSWORD=kopie
++POSTGRES_DB=kopie
++
++# --- API ----------------------------------------------------------------
++# OBLIGATOIRE ÔÇö g+®n+®rer avec : openssl rand -hex 32
++# Laisser vide ici ; docker compose +®choue volontairement si non d+®fini (NFR-4).
++SECRET_KEY=
++ACCESS_TOKEN_EXPIRE_MINUTES=15
++REFRESH_TOKEN_EXPIRE_DAYS=7
++
++# --- CORS (liste JSON) --------------------------------------------------
++# Lue +á la fois par docker-compose.yml (injection) et par l'API (Pydantic Settings).
++# En staging/prod : remplacer par les origines r+®elles (https://prof.kopie.cc, etc.).
++CORS_ORIGINS=["http://localhost:5173","http://localhost:5174"]
++
++# --- SMTP (placeholder ÔÇö Story 1.3) -------------------------------------
++SMTP_HOST=
++SMTP_PORT=587
++SMTP_USER=
++SMTP_PASSWORD=
++
++# --- R+®tention donn+®es +®l+¿ve (FR-41) ------------------------------------
++DATA_RETENTION_MONTHS=12
++
++# --- Rate limiting (FR-43 ÔÇö seuils ajustables) --------------------------
++RATE_LIMIT_AUTH=10/minute
++RATE_LIMIT_STUDENT_ANSWERS=60/minute
++RATE_LIMIT_STUDENT_EVENTS=30/minute
++RATE_LIMIT_STUDENT_SUBMIT=5/minute
+diff --git a/.dockerignore b/.dockerignore
+new file mode 100644
+index 0000000..770d748
+--- /dev/null
++++ b/.dockerignore
+@@ -0,0 +1,23 @@
++# Emp+¬che docker de copier ce qui doit +¬tre recr+®+®/reg+®n+®r+® dans l'image.
++**/node_modules
++**/dist
++**/.vite
++**/.vite-temp
++**/.venv
++**/__pycache__
++**/*.pyc
++**/.pytest_cache
++**/.mypy_cache
++**/.ruff_cache
++**/tsconfig.tsbuildinfo
++**/tsconfig.*.tsbuildinfo
++**/uv.lock.tmp
++.git
++.github
++_bmad
++_bmad-output
++docs
++.cursor
++.claude
++.agents
++*.log
+diff --git a/.nvmrc b/.nvmrc
+new file mode 100644
+index 0000000..1d9b783
+--- /dev/null
++++ b/.nvmrc
+@@ -0,0 +1 @@
++22.12.0
+diff --git a/apps/api/Dockerfile.dev b/apps/api/Dockerfile.dev
+new file mode 100644
+index 0000000..0bb63b0
+--- /dev/null
++++ b/apps/api/Dockerfile.dev
+@@ -0,0 +1,31 @@
++# =========================================================================
++# Kopie ÔÇö API FastAPI (d+®veloppement, hot-reload via uvicorn --reload)
++# =========================================================================
++FROM python:3.12-slim
++
++ENV PYTHONDONTWRITEBYTECODE=1 \
++    PYTHONUNBUFFERED=1 \
++    UV_LINK_MODE=copy
++
++WORKDIR /app
++
++RUN apt-get update \
++ && apt-get install -y --no-install-recommends curl ca-certificates \
++ && rm -rf /var/lib/apt/lists/*
++
++COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
++
++COPY pyproject.toml ./
++COPY app ./app
++COPY alembic ./alembic
++COPY alembic.ini ./
++COPY tests ./tests
++
++RUN uv sync
++
++EXPOSE 8000
++
++HEALTHCHECK --interval=10s --timeout=3s --retries=5 \
++  CMD curl -fsS http://localhost:8000/api/v1/health || exit 1
++
++CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+diff --git a/apps/web-prof/Dockerfile.dev b/apps/web-prof/Dockerfile.dev
+new file mode 100644
+index 0000000..5b5cf80
+--- /dev/null
++++ b/apps/web-prof/Dockerfile.dev
+@@ -0,0 +1,22 @@
++# =========================================================================
++# Kopie ÔÇö web-prof (d+®veloppement, hot-reload)
++# Build context : racine du monorepo (cf. docker-compose.yml).
++# Version Node align+®e sur .nvmrc et engines.node (package.json racine).
++# =========================================================================
++FROM node:22.12.0-alpine
++
++WORKDIR /app
++
++RUN corepack enable && corepack prepare pnpm@10.33.4 --activate
++
++COPY package.json pnpm-workspace.yaml pnpm-lock.yaml .npmrc ./
++COPY packages/shared-types ./packages/shared-types
++COPY apps/web-prof/package.json ./apps/web-prof/
++
++RUN pnpm install --filter web-prof... --no-frozen-lockfile
++
++COPY apps/web-prof ./apps/web-prof
++
++EXPOSE 5173
++
++CMD ["pnpm", "--filter", "web-prof", "dev", "--host", "0.0.0.0"]
+diff --git a/apps/web-eleve/Dockerfile.dev b/apps/web-eleve/Dockerfile.dev
+new file mode 100644
+index 0000000..0618b67
+--- /dev/null
++++ b/apps/web-eleve/Dockerfile.dev
+@@ -0,0 +1,22 @@
++# =========================================================================
++# Kopie ÔÇö web-eleve (d+®veloppement, hot-reload)
++# Build context : racine du monorepo (cf. docker-compose.yml).
++# Version Node align+®e sur .nvmrc et engines.node (package.json racine).
++# =========================================================================
++FROM node:22.12.0-alpine
++
++WORKDIR /app
++
++RUN corepack enable && corepack prepare pnpm@10.33.4 --activate
++
++COPY package.json pnpm-workspace.yaml pnpm-lock.yaml .npmrc ./
++COPY packages/shared-types ./packages/shared-types
++COPY apps/web-eleve/package.json ./apps/web-eleve/
++
++RUN pnpm install --filter web-eleve... --no-frozen-lockfile
++
++COPY apps/web-eleve ./apps/web-eleve
++
++EXPOSE 5174
++
++CMD ["pnpm", "--filter", "web-eleve", "dev", "--host", "0.0.0.0"]

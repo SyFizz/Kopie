@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    /* theme-teacher : dense, professionnel (Direction D2 — Calme professionnel) */
+    --primary: 221.2 83.2% 53.3%;          /* #2563eb */
+    --primary-foreground: 210 40% 98%;
+    --background: 210 40% 98%;             /* slate clair */
+    --foreground: 222.2 84% 4.9%;
+    --success: 142.1 76.2% 36.3%;
+    --warning: 47.9 95.8% 53.1%;
+    --info: 199.4 95.5% 43.9%;
+    --destructive: 0 84.2% 60.2%;          /* réservé actions irréversibles prof uniquement (UX-DR2) */
+    --border: 214.3 31.8% 91.4%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --spacing-base: 4px;
+  }
+
+  body {
+    @apply antialiased;
+  }
+}

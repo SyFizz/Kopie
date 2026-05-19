@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kopie — Directions de design</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Inter, system-ui, sans-serif; background: #f1f5f9; color: #0f172a; line-height: 1.5; }
+    header { background: #fff; border-bottom: 1px solid #e2e8f0; padding: 1rem 2rem; position: sticky; top: 0; z-index: 10; }
+    header h1 { font-size: 1.25rem; }
+    header p { font-size: 0.875rem; color: #64748b; margin-top: 0.25rem; }
+    .tabs { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
+    .tab { padding: 0.5rem 1rem; border: 1px solid #e2e8f0; border-radius: 0.5rem; background: #fff; cursor: pointer; font-size: 0.8125rem; }
+    .tab:hover { border-color: #94a3b8; }
+    .tab.active { background: #2563eb; color: #fff; border-color: #2563eb; }
+    .tab.rec { position: relative; }
+    .tab.rec::after { content: "★"; margin-left: 0.35rem; font-size: 0.7rem; }
+    main { padding: 2rem; max-width: 1400px; margin: 0 auto; }
+    .direction { display: none; }
+    .direction.active { display: block; }
+    .direction h2 { font-size: 1.5rem; margin-bottom: 0.5rem; }
+    .direction .desc { color: #64748b; margin-bottom: 1.5rem; max-width: 60ch; }
+    .mockups { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    @media (max-width: 900px) { .mockups { grid-template-columns: 1fr; } }
+    .screen { border-radius: 0.75rem; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,.08); border: 1px solid #e2e8f0; }
+    .screen-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin-bottom: 0.5rem; }
+    .screen-inner { min-height: 320px; font-size: 0.8125rem; }
+
+    /* Direction tokens */
+    .d1 { --bg: #f8fafc; --fg: #0f172a; --primary: #1e3a5f; --accent: #1e40af; --card: #fff; --muted: #64748b; --border: #e2e8f0; --success: #15803d; }
+    .d2 { --bg: #f8fafc; --fg: #0f172a; --primary: #2563eb; --accent: #3b82f6; --card: #fff; --muted: #64748b; --border: #e2e8f0; --success: #16a34a; }
+    .d3 { --bg: #fafaf9; --fg: #1c1917; --primary: #0d9488; --accent: #14b8a6; --card: #fff; --muted: #78716c; --border: #e7e5e4; --success: #059669; }
+    .d4 { --bg: #ffffff; --fg: #171717; --primary: #404040; --accent: #525252; --card: #fafafa; --muted: #737373; --border: #e5e5e5; --success: #22c55e; }
+    .d5 { --bg: #f0f9ff; --fg: #0c4a6e; --primary: #0284c7; --accent: #38bdf8; --card: #fff; --muted: #0369a1; --border: #bae6fd; --success: #059669; }
+    .d6 { --bg: #f1f5f9; --fg: #0f172a; --primary: #4f46e5; --accent: #6366f1; --card: #fff; --muted: #64748b; --border: #cbd5e1; --success: #16a34a; }
+
+    .ui { background: var(--bg); color: var(--fg); }
+    .sidebar { width: 200px; min-height: 320px; background: var(--card); border-right: 1px solid var(--border); padding: 1rem; float: left; }
+    .sidebar .logo { font-weight: 700; color: var(--primary); margin-bottom: 1rem; font-size: 1rem; }
+    .sidebar nav div { padding: 0.35rem 0.5rem; border-radius: 0.35rem; margin-bottom: 0.25rem; color: var(--muted); }
+    .sidebar nav div.on { background: color-mix(in srgb, var(--primary) 12%, transparent); color: var(--primary); font-weight: 600; }
+    .content { margin-left: 200px; padding: 1rem; }
+    .btn { display: inline-block; padding: 0.4rem 0.85rem; border-radius: 0.4rem; font-weight: 600; font-size: 0.75rem; border: none; cursor: default; }
+    .btn-p { background: var(--primary); color: #fff; }
+    .btn-s { background: var(--card); border: 1px solid var(--border); color: var(--fg); }
+    .badge { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 999px; font-size: 0.65rem; font-weight: 600; }
+    .badge-w { background: #fef3c7; color: #92400e; }
+    .badge-ok { background: #dcfce7; color: #166534; }
+    .badge-m { background: var(--border); color: var(--muted); }
+    table { width: 100%; border-collapse: collapse; margin-top: 0.75rem; background: var(--card); border-radius: 0.5rem; overflow: hidden; }
+    th, td { text-align: left; padding: 0.5rem 0.65rem; border-bottom: 1px solid var(--border); }
+    th { font-size: 0.65rem; text-transform: uppercase; color: var(--muted); }
+    .student { padding: 2rem; text-align: center; min-height: 320px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .student h3 { font-size: 1.1rem; margin-bottom: 0.5rem; }
+    .student .timer { font-size: 0.75rem; color: var(--muted); margin-bottom: 1rem; }
+    .student .q { max-width: 280px; text-align: left; background: var(--card); padding: 1rem; border-radius: 0.5rem; border: 1px solid var(--border); width: 100%; }
+    .toast { margin-top: 1rem; padding: 0.5rem 0.75rem; background: color-mix(in srgb, var(--accent) 15%, var(--card)); border: 1px solid var(--accent); border-radius: 0.4rem; font-size: 0.7rem; color: var(--fg); max-width: 280px; }
+    .criteria { margin-top: 2rem; padding: 1.25rem; background: #fff; border-radius: 0.75rem; border: 1px solid #e2e8f0; }
+    .criteria h3 { font-size: 1rem; margin-bottom: 0.75rem; }
+    .criteria ul { padding-left: 1.25rem; color: #475569; font-size: 0.875rem; }
+    .criteria li { margin-bottom: 0.35rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Kopie — Exploration des directions de design</h1>
+    <p>6 variations · Écran enseignant (historique accès) + session élève · Ouvrir dans le navigateur</p>
+    <div class="tabs" id="tabs"></div>
+  </header>
+  <main>
+    <section class="direction d2 active" data-id="d2">
+      <h2>D2 — Calme professionnel ★ recommandé</h2>
+      <p class="desc">Bleu institutionnel, sidebar Linear, densité modérée. Aligné fondations visuelles et objectifs émotionnels (confiance, sérénité).</p>
+      <div class="mockups"></div>
+    </section>
+    <!-- other directions injected by script -->
+    <div class="criteria">
+      <h3>Critères d'évaluation</h3>
+      <ul>
+        <li><strong>Hiérarchie</strong> — Trouve-t-on l'action « Envoyer à un élève » en &lt; 3 s ?</li>
+        <li><strong>Session élève</strong> — L'écran rassure-t-il (pas ambiance surveillance) ?</li>
+        <li><strong>Statuts</strong> — En attente / terminée lisibles sans rouge « triche » ?</li>
+        <li><strong>RGAA</strong> — Contraste et taille de texte suffisants ?</li>
+        <li><strong>Différenciation</strong> — Se distingue-t-on d'Evalbox / proctoring ?</li>
+      </ul>
+    </div>
+  </main>
+  <script>
+    const dirs = [
+      { id: 'd1', name: 'D1 — Institutionnel classique', rec: false, primary: '#1e3a5f' },
+      { id: 'd2', name: 'D2 — Calme professionnel ★', rec: true, primary: '#2563eb' },
+      { id: 'd3', name: 'D3 — Chaleureux accessible', rec: false, primary: '#0d9488' },
+      { id: 'd4', name: 'D4 — Minimal focus', rec: false, primary: '#404040' },
+      { id: 'd5', name: 'D5 — Éducatif doux', rec: false, primary: '#0284c7' },
+      { id: 'd6', name: 'D6 — Compact power-user', rec: false, primary: '#4f46e5' },
+    ];
+    const tabs = document.getElementById('tabs');
+    const main = document.querySelector('main');
+    const tpl = (cls) => `
+      <div class="mockups">
+        <div><div class="screen-label">Espace enseignant</div>
+        <div class="screen"><div class="screen-inner ui ${cls}">
+          <div class="sidebar"><div class="logo">Kopie</div><nav>
+            <div>Évaluations</div><div class="on">Accès envoyés</div><div>Banque</div>
+          </nav></div>
+          <div class="content">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <strong>Contrôle Anglais — T2</strong>
+              <button class="btn btn-p">+ Envoyer à un élève</button>
+            </div>
+            <table><thead><tr><th>Élève</th><th>Statut</th><th>Fenêtre</th></tr></thead>
+            <tbody>
+              <tr><td>Lucas Martin</td><td><span class="badge badge-w">En attente</span></td><td>ven. 18h–22h</td></tr>
+              <tr><td>Emma Durand</td><td><span class="badge badge-ok">Terminée</span></td><td>jeu.</td></tr>
+            </tbody></table>
+          </div>
+        </div></div>
+        <div><div class="screen-label">Session élève</div>
+        <div class="screen"><div class="screen-inner ui ${cls} student">
+          <div class="timer">Temps restant : 42:15 · Tiers-temps +50%</div>
+          <h3>Question 2 sur 5</h3>
+          <div class="q"><strong>Définissez « globalization »</strong><br><br>
+            <input style="width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:0.35rem" placeholder="Votre réponse..." />
+          </div>
+          <div class="toast">ℹ️ Changement d'onglet enregistré. Vous pouvez continuer.</div>
+        </div></div>
+      </div>`;
+
+    dirs.forEach((d, i) => {
+      const tab = document.createElement('button');
+      tab.className = 'tab' + (d.rec ? ' rec' : '') + (i === 1 ? ' active' : '');
+      tab.textContent = d.name;
+      tab.onclick = () => show(d.id);
+      tabs.appendChild(tab);
+      if (d.id !== 'd2') {
+        const sec = document.createElement('section');
+        sec.className = 'direction ' + d.id;
+        sec.dataset.id = d.id;
+        sec.innerHTML = `<h2>${d.name}</h2><p class="desc">Variation ${d.id.toUpperCase()} — primary ${d.primary}</p>` + tpl(d.id);
+        main.insertBefore(sec, main.querySelector('.criteria'));
+      } else {
+        document.querySelector('.direction.d2 .mockups').outerHTML = tpl('d2');
+      }
+    });
+
+    function show(id) {
+      document.querySelectorAll('.direction').forEach(el => el.classList.toggle('active', el.dataset.id === id));
+      document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', dirs[i].id === id));
+    }
+  </script>
+</body>
+</html>

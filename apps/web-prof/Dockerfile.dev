@@ -1,0 +1,22 @@
+# =========================================================================
+# Kopie — web-prof (développement, hot-reload)
+# Build context : racine du monorepo (cf. docker-compose.yml).
+# Version Node alignée sur .nvmrc et engines.node (package.json racine).
+# =========================================================================
+FROM node:22.12.0-alpine
+
+WORKDIR /app
+
+RUN corepack enable && corepack prepare pnpm@10.33.4 --activate
+
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml .npmrc ./
+COPY packages/shared-types ./packages/shared-types
+COPY apps/web-prof/package.json ./apps/web-prof/
+
+RUN pnpm install --filter web-prof... --frozen-lockfile
+
+COPY apps/web-prof ./apps/web-prof
+
+EXPOSE 5173
+
+CMD ["pnpm", "--filter", "web-prof", "dev", "--host", "0.0.0.0"]
