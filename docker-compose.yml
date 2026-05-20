@@ -53,6 +53,8 @@ services:
       RATE_LIMIT_STUDENT_ANSWERS: ${RATE_LIMIT_STUDENT_ANSWERS:-60/minute}
       RATE_LIMIT_STUDENT_EVENTS: ${RATE_LIMIT_STUDENT_EVENTS:-30/minute}
       RATE_LIMIT_STUDENT_SUBMIT: ${RATE_LIMIT_STUDENT_SUBMIT:-5/minute}
+      # Cookie sécurité (mettre à true en production avec HTTPS)
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
     ports:
       - "8000:8000"
     volumes:
