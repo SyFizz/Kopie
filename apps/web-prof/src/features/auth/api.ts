@@ -1,10 +1,13 @@
 // Client HTTP minimal pour les endpoints d'authentification.
-// Story 1.3 — fetch direct ; la version TanStack Query viendra avec Story 1.4.
+// Story 1.3 — register / verify-email.
+// Story 1.4 — login / refresh / logout (cookies httpOnly via credentials:include).
 
 import type { components } from '@kopie/shared-types'
 
 export type RegisterRequest = components['schemas']['RegisterRequest']
 export type TeacherCreated = components['schemas']['TeacherCreated']
+export type LoginRequest = components['schemas']['LoginRequest']
+export type LoginResponse = components['schemas']['LoginResponse']
 export type ApiError = components['schemas']['Error']
 
 const API_URL = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '')
@@ -89,4 +92,62 @@ export async function verifyTeacherEmail(
 
   const error = await parseErrorBody(response)
   return { ok: false, status: response.status, error }
+}
+
+export type LoginResult =
+  | { ok: true; data: LoginResponse }
+  | { ok: false; status: number; error: ApiError['error'] }
+
+/**
+ * Authentifie un enseignant. ``credentials: 'include'`` est obligatoire pour
+ * que le navigateur conserve le cookie ``refresh_token`` httpOnly émis par
+ * l'API (sans cela les rotations ultérieures via ``/auth/refresh``
+ * échoueraient).
+ */
+export async function loginTeacher(
+  payload: LoginRequest,
+): Promise<LoginResult> {
+  let response: Response
+  try {
+    response = await fetch(buildUrl('/api/v1/auth/login'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(payload),
+    })
+  } catch {
+    return { ok: false, status: 0, error: { ...NETWORK_ERROR } }
+  }
+
+  if (response.status === 200) {
+    try {
+      const data = (await response.json()) as LoginResponse
+      return { ok: true, data }
+    } catch {
+      return { ok: false, status: response.status, error: { ...NETWORK_ERROR } }
+    }
+  }
+
+  const error = await parseErrorBody(response)
+  return { ok: false, status: response.status, error }
+}
+
+export type LogoutResult = { ok: true } | { ok: false; status: number }
+
+/**
+ * Appelle ``POST /api/v1/auth/logout`` — l'API supprime le cookie
+ * ``refresh_token``. Le retour est volontairement minimal : un échec réseau
+ * n'empêche pas l'``AuthContext`` d'effacer l'access token en mémoire.
+ */
+export async function logoutTeacher(): Promise<LogoutResult> {
+  try {
+    const response = await fetch(buildUrl('/api/v1/auth/logout'), {
+      method: 'POST',
+      credentials: 'include',
+    })
+    if (response.status === 200) return { ok: true }
+    return { ok: false, status: response.status }
+  } catch {
+    return { ok: false, status: 0 }
+  }
 }
