@@ -1,5 +1,5 @@
 # generated: 2026-05-19
-# last_updated: 2026-05-19
+# last_updated: 2026-05-20
 # project: Kopie
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-05-19
-last_updated: 2026-05-19  # updated by bmad-dev-story re-patch (1-3 → review after 2nd review pass)
+last_updated: 2026-05-20  # updated by bmad-dev-story (1-4 → review)
 project: Kopie
 project_key: NOKEY
 tracking_system: file-system
@@ -45,9 +45,9 @@ development_status:
   # Epic 1: Fondation plateforme et espace enseignant
   epic-1: in-progress
   1-1-scaffold-monorepo-et-infrastructure-locale: done
-  1-2-contrat-openapi-initial-et-types-partages: in-progress
-  1-3-inscription-enseignant-avec-validation-email: review
-  1-4-connexion-enseignant-et-gestion-de-session-jwt: backlog
+  1-2-contrat-openapi-initial-et-types-partages: done
+  1-3-inscription-enseignant-avec-validation-email: done
+  1-4-connexion-enseignant-et-gestion-de-session-jwt: review
   1-5-gestion-du-profil-enseignant: backlog
   1-6-isolation-des-donnees-enseignant: backlog
   epic-1-retrospective: optional
