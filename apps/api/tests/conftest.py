@@ -14,6 +14,7 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 
+import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import (
@@ -22,12 +23,25 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
+from app.core.config import settings
 from app.core.database import get_db
 from app.core.rate_limit import limiter
 from app.main import app
 from app.models import Base  # noqa: F401 — assure l'enregistrement des tables
 
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
+
+
+@pytest.fixture(autouse=True)
+def _cookie_secure_off(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Désactive ``Secure`` sur les cookies en environnement de test.
+
+    Le client httpx parle en ``http://test`` (pas HTTPS) ; un cookie posé
+    avec ``Secure=True`` ne serait pas renvoyé par le jar sur la requête
+    suivante, ce qui casserait notamment ``POST /auth/refresh``. Cette
+    fixture aligne le test avec le ``.env`` de dev (``COOKIE_SECURE=false``).
+    """
+    monkeypatch.setattr(settings, "COOKIE_SECURE", False)
 
 
 @pytest_asyncio.fixture(scope="function")

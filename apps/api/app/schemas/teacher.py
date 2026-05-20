@@ -75,3 +75,34 @@ class VerifyEmailResponse(BaseModel):
     """Réponse de ``GET /api/v1/auth/verify-email`` (HTTP 200)."""
 
     message: str
+
+
+class LoginRequest(BaseModel):
+    """Charge utile de ``POST /api/v1/auth/login`` — Story 1.4.
+
+    Aucune contrainte de longueur côté login (la politique 12 octets+ ne
+    s'applique qu'à l'inscription) : on accepte n'importe quel mot de passe
+    fourni et on le compare au hash en base. La sortie est donc symétrique
+    pour ``email`` invalide et mot de passe vide → 422 ``VALIDATION_ERROR``.
+    """
+
+    email: EmailStr = Field(..., description="Adresse email de l'enseignant.")
+    password: str = Field(
+        ...,
+        min_length=1,
+        description="Mot de passe en clair (HTTPS obligatoire en production).",
+    )
+
+
+class LoginResponse(BaseModel):
+    """Réponse de ``POST /api/v1/auth/login`` et ``POST /api/v1/auth/refresh``.
+
+    Le ``refresh_token`` est servi via cookie httpOnly Secure SameSite=Strict
+    et n'apparaît jamais dans ce schéma JSON (cf. ``contracts/openapi.yaml``).
+    """
+
+    access_token: str
+    token_type: str = Field(
+        default="bearer",
+        description="Toujours `bearer` (RFC 6750).",
+    )

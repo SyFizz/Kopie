@@ -32,6 +32,11 @@ class Settings(BaseSettings):
     RATE_LIMIT_STUDENT_EVENTS: str = "30/minute"
     RATE_LIMIT_STUDENT_SUBMIT: str = "5/minute"
 
+    # Cookie de session (Story 1.4 — refresh_token httpOnly).
+    # ``True`` en production (HTTPS obligatoire pour que le navigateur le
+    # serve) ; ``False`` en développement local (HTTP). Surcharger via .env.
+    COOKIE_SECURE: bool = True
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
