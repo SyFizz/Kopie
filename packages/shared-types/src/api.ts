@@ -71,6 +71,98 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Connexion enseignant
+         * @description Authentifie un enseignant et retourne un access token JWT (HS256).
+         *     Pose également un cookie `refresh_token` httpOnly Secure SameSite=Strict
+         *     utilisable contre `POST /api/v1/auth/refresh`.
+         *
+         *     Rate-limité par IP (FR-43, défaut `10/minute`).
+         */
+        post: operations["loginTeacher"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rafraîchissement du token d'accès
+         * @description Émet un nouveau couple `access_token` (corps JSON) et `refresh_token`
+         *     (cookie httpOnly — rotation systématique).
+         *
+         *     Le `refresh_token` voyage exclusivement via le cookie httpOnly posé
+         *     à `POST /api/v1/auth/login` (donc non documenté dans le requestBody).
+         *     Le navigateur l'envoie automatiquement avec `credentials: 'include'`.
+         *
+         *     Rate-limité par IP (FR-43, défaut `10/minute`).
+         */
+        post: operations["refreshToken"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Déconnexion enseignant
+         * @description Supprime le cookie `refresh_token` côté navigateur (Max-Age=0). Le client
+         *     doit également effacer l'access token de sa mémoire en local.
+         */
+        post: operations["logoutTeacher"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/teachers/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Profil de l'enseignant connecté
+         * @description Retourne le profil de l'enseignant identifié par l'`Authorization: Bearer`.
+         */
+        get: operations["getCurrentTeacher"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -153,6 +245,39 @@ export interface components {
              * @enum {string}
              */
             status: "pending";
+        };
+        /** @description Charge utile de `POST /api/v1/auth/login`. */
+        LoginRequest: {
+            /**
+             * Format: email
+             * @description Adresse email de l'enseignant (servant d'identifiant)
+             * @example marie.dupont@academie-versailles.fr
+             */
+            email: string;
+            /**
+             * @description Mot de passe en clair (HTTPS obligatoire en production).
+             *     La requête sortante ne stocke jamais ce champ ; le serveur le
+             *     compare au hash bcrypt en DB.
+             * @example motdepasse123456
+             */
+            password: string;
+        };
+        /**
+         * @description Réponse de `POST /api/v1/auth/login` et `POST /api/v1/auth/refresh`.
+         *     Le `refresh_token` est posé en cookie httpOnly Secure SameSite=Strict —
+         *     il n'apparaît jamais dans ce corps JSON.
+         */
+        LoginResponse: {
+            /**
+             * @description JWT access token signé HS256 (TTL court — défaut 15 minutes).
+             *     À stocker en mémoire côté client (jamais localStorage / sessionStorage).
+             */
+            access_token: string;
+            /**
+             * @description Toujours `bearer` (RFC 6750).
+             * @enum {string}
+             */
+            token_type: "bearer";
         };
         Error: {
             error: {
@@ -289,6 +414,160 @@ export interface operations {
              *     sont indistinguables côté client — cf. AC4).
              */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    loginTeacher: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Connexion réussie — access token retourné, cookie refresh posé */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoginResponse"];
+                };
+            };
+            /**
+             * @description Credentials incorrects (email inconnu OU mot de passe erroné).
+             *     Message identique dans les deux cas pour ne pas permettre l'énumération
+             *     d'utilisateurs.
+             */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Compte non actif (email non confirmé) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Données invalides */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Trop de requêtes (rate limit dépassé) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    refreshToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Nouveau access token + cookie refresh renouvelé (rotation) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoginResponse"];
+                };
+            };
+            /** @description Cookie refresh absent, invalide ou expiré */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Trop de requêtes (rate limit dépassé) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    logoutTeacher: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cookie refresh supprimé */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example Déconnecté. */
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    getCurrentTeacher: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Profil enseignant complet */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Teacher"];
+                };
+            };
+            /** @description Token absent, invalide ou expiré */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

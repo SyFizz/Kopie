@@ -1,7 +1,7 @@
 openapi: "3.1.0"
 info:
   title: Kopie API
-  version: "0.2.0"
+  version: "0.3.0"
   description: |
     Plateforme d'évaluation sécurisée — API REST.
     Contrat versionné. Types front générés via openapi-typescript → @kopie/shared-types.
@@ -120,7 +120,145 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 
+  /api/v1/auth/login:
+    post:
+      operationId: loginTeacher
+      summary: Connexion enseignant
+      description: |
+        Authentifie un enseignant et retourne un access token JWT (HS256).
+        Pose également un cookie `refresh_token` httpOnly Secure SameSite=Strict
+        utilisable contre `POST /api/v1/auth/refresh`.
+
+        Rate-limité par IP (FR-43, défaut `10/minute`).
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Connexion réussie — access token retourné, cookie refresh posé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "401":
+          description: |
+            Credentials incorrects (email inconnu OU mot de passe erroné).
+            Message identique dans les deux cas pour ne pas permettre l'énumération
+            d'utilisateurs.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Compte non actif (email non confirmé)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Données invalides
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: Trop de requêtes (rate limit dépassé)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/auth/refresh:
+    post:
+      operationId: refreshToken
+      summary: Rafraîchissement du token d'accès
+      description: |
+        Émet un nouveau couple `access_token` (corps JSON) et `refresh_token`
+        (cookie httpOnly — rotation systématique).
+
+        Le `refresh_token` voyage exclusivement via le cookie httpOnly posé
+        à `POST /api/v1/auth/login` (donc non documenté dans le requestBody).
+        Le navigateur l'envoie automatiquement avec `credentials: 'include'`.
+
+        Rate-limité par IP (FR-43, défaut `10/minute`).
+      tags: [auth]
+      responses:
+        "200":
+          description: Nouveau access token + cookie refresh renouvelé (rotation)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "401":
+          description: Cookie refresh absent, invalide ou expiré
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: Trop de requêtes (rate limit dépassé)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/auth/logout:
+    post:
+      operationId: logoutTeacher
+      summary: Déconnexion enseignant
+      description: |
+        Supprime le cookie `refresh_token` côté navigateur (Max-Age=0). Le client
+        doit également effacer l'access token de sa mémoire en local.
+      tags: [auth]
+      responses:
+        "200":
+          description: Cookie refresh supprimé
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [message]
+                properties:
+                  message:
+                    type: string
+                    example: "Déconnecté."
+
+  /api/v1/teachers/me:
+    get:
+      operationId: getCurrentTeacher
+      summary: Profil de l'enseignant connecté
+      description: |
+        Retourne le profil de l'enseignant identifié par l'`Authorization: Bearer`.
+      tags: [teachers]
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Profil enseignant complet
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Teacher"
+        "401":
+          description: Token absent, invalide ou expiré
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
 components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        Access token JWT (HS256) émis par `POST /api/v1/auth/login`.
+        À envoyer dans l'en-tête `Authorization: Bearer <token>`.
   schemas:
     Teacher:
       type: object
@@ -203,6 +341,42 @@ components:
           type: string
           enum: [pending]
           description: Toujours `pending` à l'inscription — en attente de confirmation email
+
+    LoginRequest:
+      type: object
+      description: Charge utile de `POST /api/v1/auth/login`.
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          description: Adresse email de l'enseignant (servant d'identifiant)
+          example: "marie.dupont@academie-versailles.fr"
+        password:
+          type: string
+          description: |
+            Mot de passe en clair (HTTPS obligatoire en production).
+            La requête sortante ne stocke jamais ce champ ; le serveur le
+            compare au hash bcrypt en DB.
+          example: "motdepasse123456"
+
+    LoginResponse:
+      type: object
+      description: |
+        Réponse de `POST /api/v1/auth/login` et `POST /api/v1/auth/refresh`.
+        Le `refresh_token` est posé en cookie httpOnly Secure SameSite=Strict —
+        il n'apparaît jamais dans ce corps JSON.
+      required: [access_token, token_type]
+      properties:
+        access_token:
+          type: string
+          description: |
+            JWT access token signé HS256 (TTL court — défaut 15 minutes).
+            À stocker en mémoire côté client (jamais localStorage / sessionStorage).
+        token_type:
+          type: string
+          enum: [bearer]
+          description: Toujours `bearer` (RFC 6750).
 
     Error:
       type: object
